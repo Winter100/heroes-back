@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Item {
+  id                Int      @id @default(autoincrement())
+  name              String
+  description       String
+  categoryId        Int
+  imageId           Int
+  tierId            Int
+  category          Category @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  image             Image    @relation(fields: [imageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tier              ItemTier @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  recipesAsResult   Recipe[] @relation("ResultItem")
+  recipesAsMaterial Recipe[] @relation("MaterialItem")
+
+  itemDrop ItemDrop[]
+
+  @@map("items")
+}
+
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  items Item[]
+
+  @@map("categories")
+}
+
+model Image {
+  id    Int    @id @default(autoincrement())
+  url   String
+  items Item[]
+
+  @@map("images")
+}
+
+model Recipe {
+  id           Int  @id @default(autoincrement())
+  resultId     Int
+  materialId   Int
+  quantity     Int
+  resultItem   Item @relation("ResultItem", fields: [resultId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  materialItem Item @relation("MaterialItem", fields: [materialId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("recipes")
+}
+
+// 아이템 티어 (일반,초급,중급,고급,레어,전설)
+model ItemTier {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  items    Item[]
+  enchants Enchant[]
+
+  @@map("tiers")
+}
+
+// 아이템 제작 타이틀 (전문기술, 세공 등)
+model ItemCraftTitle {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  @@map("craftTitles")
+}
+
+// 아이템 제작 방법 (A아이템의 제작 방법은 세공, 금속 무기 등)
+// model ItemCraftMethod{
+
+// }
+
+// ---인챈트---
+
+model Enchant {
+  id      Int    @id @default(autoincrement())
+  name    String @unique
+  rankId  Int
+  tierId  Int
+  affixId Int
+
+  // image_id Int
+  rank  Rank     @relation(fields: [rankId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tier  ItemTier @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  affix Affix    @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  effects     Effect[]
+  enchantDrop EnchantDrop[]
+  enchantSlot EnchantSlot[]
+
+  @@map("enchants")
+}
+
+model Rank {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  enchant Enchant[]
+
+  @@map("ranks")
+}
+
+model Affix {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  value String @unique
+
+  enchant Enchant[]
+
+  @@map("affixs")
+}
+
+model Stat {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  effects   Effect[]
+  bossStats BossStat[]
+
+  @@map("stats")
+}
+
+model Effect {
+  id Int @id @default(autoincrement())
+
+  enchantId Int
+  enchant   Enchant @relation(fields: [enchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  statId Int
+  stat   Stat @relation(fields: [statId], references: [id])
+
+  value String
+
+  @@map("effects")
+}
+
+model Slot {
+  id    Int    @id @default(autoincrement())
+  name  String @unique //슬롯 한글명
+  value String @unique //슬롯 실제 데이터 명
+
+  enchantSlot EnchantSlot[]
+
+  @@map("slots")
+}
+
+// 인챈트 가능 부위
+model EnchantSlot {
+  id Int @id @default(autoincrement())
+
+  slotId Int
+  slot   Slot @relation(fields: [slotId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  enchantId Int
+  enchant Enchant @relation(fields: [enchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("enchantSlots")
+}
+
+// ---레이드---
+model Raid {
+  id Int @id @default(autoincrement())
+
+  raidTitleId Int
+  raidTitle   RaidTitle @relation(fields: [raidTitleId], references: [id])
+
+  battle String @unique
+  boss   String
+  image  String
+  level  Int
+
+  bossStat         BossStat[]
+  bonusTargets     RaidBonusTarget[]
+  itemDrop         ItemDrop[]
+  enchantDrop      EnchantDrop[]
+  basicClearReward BasicClearReward[]
+
+  @@map("raids")
+}
+
+model RaidTitle {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  raid Raid[]
+
+  @@map("raidTitles")
+}
+
+model BossStat {
+  id Int @id @default(autoincrement())
+
+  statId Int
+  stat   Stat @relation(fields: [statId], references: [id])
+  value  Int
+
+  raidId Int
+  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  type StatType
+
+  @@map("bossStats")
+}
+
+enum StatType {
+  ENTRY
+  LIMIT
+}
+
+model RaidBonusTarget {
+  id Int @id @default(autoincrement())
+
+  bonus String
+  value String
+
+  raidId Int
+  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("raidBonusTargets")
+}
+
+// 보스 클리어시 얻을 수 있는 아이템 보상 및 부스트 적용 여부
+model ItemDrop {
+  id Int @id @default(autoincrement())
+
+  itemId Int
+  item   Item @relation(fields: [itemId], references: [id])
+
+  raidId Int
+  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  boostUp   Boolean
+  boostOnly Boolean
+
+  @@map("itemDrops")
+}
+
+model EnchantDrop {
+  id Int @id @default(autoincrement())
+
+  enchantId Int
+  enchant   Enchant @relation(fields: [enchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  raidId Int
+  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("enchantDrops")
+}
+
+// 경험치, 골드, AP포인트
+model BasicClearRewardName {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  basicClearReward BasicClearReward[]
+
+  @@map("basicClearRewardNames")
+}
+
+// 보스 클리어시 얻는 기본 보상들 (경험치, 골드, AP포인트)
+model BasicClearReward {
+  id Int @id @default(autoincrement())
+
+  basicClearRewardNameId Int
+  basicClearRewardName   BasicClearRewardName @relation(fields: [basicClearRewardNameId], references: [id])
+  value                  Int
+
+  raidId Int
+  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("basicClearRewards")
+}
+
+
+// 캐릭터 관련
+model Character {
+  id Int @id @default(autoincrement())
+
+  name String @unique
+  image String
+
+  characterSkill CharacterSkill[]
+
+  @@map("characters")
+}
+
+model Skill {
+  id  Int @id @default(autoincrement())
+
+  name String @unique
+  description String
+  image String
+
+  characterSkill CharacterSkill[]
+
+  @@map("skills")
+}
+
+model CharacterSkill {
+  id Int @id @default(autoincrement())
+
+  characterId Int
+  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade,onUpdate: Cascade)
+
+  skillId Int
+  skill Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@map("characters_skills")
+}
+
+model User {
+  id String @id @default(uuid())
+  name String @unique
+  email String @unique
+  password String
+  role UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
