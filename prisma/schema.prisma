@@ -11,17 +11,17 @@ datasource db {
 model Item {
   id                Int      @id @default(autoincrement())
   name              String
-  description       String
+  description       String?
   categoryId        Int
-  imageId           Int
+  image           String
   tierId            Int
   category          Category @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  image             Image    @relation(fields: [imageId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tier              ItemTier @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   recipesAsResult   Recipe[] @relation("ResultItem")
   recipesAsMaterial Recipe[] @relation("MaterialItem")
 
   itemDrop ItemDrop[]
+  enchantDrop EnchantDrop[]
 
   @@map("items")
 }
@@ -32,14 +32,6 @@ model Category {
   items Item[]
 
   @@map("categories")
-}
-
-model Image {
-  id    Int    @id @default(autoincrement())
-  url   String
-  items Item[]
-
-  @@map("images")
 }
 
 model Recipe {
@@ -247,8 +239,12 @@ model EnchantDrop {
   enchantId Int
   enchant   Enchant @relation(fields: [enchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
-  raidId Int
-  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  raidId Int?
+  raid   Raid? @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  itemId Int?
+  item Item? @relation(fields: [itemId],references: [id], onDelete: Cascade, onUpdate: Cascade)
+  
 
   @@map("enchantDrops")
 }
@@ -323,10 +319,24 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  refreshTokens RefreshToken[]
+
   @@map("users")
 }
 
 enum UserRole {
   USER
   ADMIN
+}
+
+model RefreshToken {
+  id String @id @default(uuid())
+  token String @unique
+  expiresAt DateTime
+
+  userId String
+  user User @relation(fields: [userId], references: [id],onDelete: Cascade)
+
+@@unique([userId])
+@@map("refreshToken")
 }
