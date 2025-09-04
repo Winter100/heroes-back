@@ -22,4 +22,12 @@ export class UserRepository {
       },
     });
   }
+
+  async findUserByUserId(userId: string) {
+    return await this.prismaService.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+  }
 }
