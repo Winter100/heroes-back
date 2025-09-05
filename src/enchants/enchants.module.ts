@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { EnchantsController } from './enchants.controller';
 import { EnchantService } from './enchants.service';
-import { PrismaModule } from 'src/prisma/prisma.module';
 import { EnchantRepository } from './repository/enchant.respository';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [],
   controllers: [EnchantsController],
   providers: [EnchantService, EnchantRepository],
 })
