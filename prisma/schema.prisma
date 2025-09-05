@@ -10,7 +10,7 @@ datasource db {
 
 model Item {
   id                Int      @id @default(autoincrement())
-  name              String
+  name              String @unique
   description       String?
   categoryId        Int
   image           String
@@ -244,7 +244,6 @@ model EnchantDrop {
 
   itemId Int?
   item Item? @relation(fields: [itemId],references: [id], onDelete: Cascade, onUpdate: Cascade)
-  
 
   @@map("enchantDrops")
 }
