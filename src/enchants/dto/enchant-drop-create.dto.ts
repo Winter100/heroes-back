@@ -1,8 +1,9 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class EnchantDropCreateDto {
   @IsString()
-  enchantName: string;
+  @IsNotEmpty()
+  enchantName!: string;
 
   @IsString()
   @IsOptional()

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from 'src/prisma/prisma.service';
+import { EnchantCategory, Prisma } from '@prisma/client';
 import { EnchantDropCreateDto } from '../dto/enchant-drop-create.dto';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class EnchantRepository {
@@ -15,8 +15,11 @@ export class EnchantRepository {
     });
   }
 
-  async findAllWithRelations(): Promise<EnchantWithRelations[]> {
+  async findAllWithRelations(
+    category: EnchantCategory = EnchantCategory.ENCHANT,
+  ): Promise<EnchantWithRelations[]> {
     return await this.prismaService.enchant.findMany({
+      where: { category },
       select: enchantWithRelationsSelect,
     });
   }
@@ -51,6 +54,7 @@ export class EnchantRepository {
 
 const enchantWithRelationsSelect = Prisma.validator<Prisma.EnchantSelect>()({
   name: true,
+  category: true,
   enchantSlot: {
     select: {
       slot: {
