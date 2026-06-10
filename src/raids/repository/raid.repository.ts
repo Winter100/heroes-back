@@ -1,5 +1,6 @@
+import { RaidCreateDto } from './../dto/raid-create.dto';
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, Raid, RaidTitle } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
@@ -12,11 +13,47 @@ export class RaidRepository {
     });
   }
 
+  async findRaidTitle(raidTitle: string) {
+    return await this.prisma.raidTitle.findUnique({
+      where: {
+        name: raidTitle,
+      },
+    });
+  }
+
   async updateBattleImage(battle: string, imgaeUrl: string) {
     return await this.prisma.raid.update({
       where: { battle: battle },
       data: {
         image: imgaeUrl,
+      },
+    });
+  }
+
+  async createRaid(
+    raidTitleId: number,
+    raidCreateDto: RaidCreateDto,
+    image: string,
+  ): Promise<Raid> {
+    return await this.prisma.raid.create({
+      data: {
+        raidTitleId,
+        battle: raidCreateDto.battle,
+        boss: raidCreateDto.boss,
+        level: raidCreateDto.level,
+        image,
+      },
+    });
+  }
+
+  async createRaidTitle(raidTitle: string): Promise<RaidTitle> {
+    return await this.prisma.raidTitle.upsert({
+      where: {
+        name: raidTitle,
+      },
+      update: {},
+      create: {
+        name: raidTitle,
       },
     });
   }

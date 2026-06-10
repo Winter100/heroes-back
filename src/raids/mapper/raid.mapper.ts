@@ -24,7 +24,7 @@ export class RaidMapper {
       { entry: [], limit: [] },
     );
 
-    const reward = raid.basicClearReward.map((reward) => {
+    const reward = raid?.basicClearReward.map((reward) => {
       return {
         name: reward.basicClearRewardName.name,
         value: reward.value,
