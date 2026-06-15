@@ -14,8 +14,6 @@ export class CharacterRepository implements UCharacterRepository {
     return await this.prismaService.character.findUnique({
       where: { name: jobName },
       select: {
-        name: true,
-        image: true,
         characterSkill: {
           select: {
             skill: {
@@ -36,6 +34,31 @@ export class CharacterRepository implements UCharacterRepository {
       data: {
         name: jobName,
         image,
+      },
+    });
+  }
+
+  async createSkill(skillName: string, description: string, image: string) {
+    return await this.prismaService.skill.create({
+      data: {
+        name: skillName,
+        image,
+        description,
+      },
+    });
+  }
+
+  async createClassSkill(className: string, skillId: number) {
+    await this.prismaService.characterSkill.create({
+      data: {
+        character: {
+          connect: {
+            name: className,
+          },
+        },
+        skill: {
+          connect: { id: skillId },
+        },
       },
     });
   }

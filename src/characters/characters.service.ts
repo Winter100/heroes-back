@@ -1,15 +1,16 @@
-import { ImageUploadService } from 'src/supabase/imageUpload.service';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { CharacterClassCreateDto } from './dto/character-class-create.dto';
-import { CHARACTER_IMAGE_BUCKET } from './constant/burket';
 import { ClassResponseDto } from './dto/class-response.dto';
 import { CharacterRepository } from './repository/character.repository';
 import { CharacterClassResponseDto } from './dto/character-class-response.dto';
 import { plainToInstance } from 'class-transformer';
+import { CreateSkillDto } from './dto/create-skill.dto';
+import { ImageUploadService } from '../supabase/imageUpload.service';
+import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 
 @Injectable()
 export class CharactersService {
@@ -26,7 +27,7 @@ export class CharactersService {
 
     const imageUrl = await this.imageUploadService.uploadImage(
       image,
-      CHARACTER_IMAGE_BUCKET,
+      BUCKET_NAME.characters,
     );
 
     const response = await this.characterRepository.createClassProfile(
@@ -34,21 +35,41 @@ export class CharactersService {
       imageUrl,
     );
 
-    if (!response) throw new BadRequestException();
+    if (!response)
+      throw new BadRequestException(`${clasName}의 생성에 실패했습니다.`);
 
     return plainToInstance(CharacterClassResponseDto, response);
+  }
+
+  async createClassSkill(
+    createSkillDto: CreateSkillDto,
+    image: Express.Multer.File,
+  ) {
+    const { className, description, name: skillName } = createSkillDto;
+
+    const imageUrl = await this.imageUploadService.uploadImage(
+      image,
+      BUCKET_NAME.skills,
+    );
+    const skill = await this.characterRepository.createSkill(
+      skillName,
+      description,
+      imageUrl,
+    );
+
+    await this.characterRepository.createClassSkill(className, skill.id);
+
+    return [];
   }
 
   async findSkillsByClassName(className: string): Promise<ClassResponseDto> {
     const result =
       await this.characterRepository.findSkillsByClassName(className);
 
-    if (!result) throw new NotFoundException('해당 직업 정보가 없습니다.');
+    if (!result) throw new NotFoundException(`${className} 정보가 없습니다.`);
 
     const response = {
-      name: result.name,
-      image: result.image,
-      skills: result?.characterSkill.map((skill) => skill.skill),
+      skills: result.characterSkill.map((skill) => skill.skill),
     };
 
     return plainToInstance(ClassResponseDto, response);
