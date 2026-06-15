@@ -19,7 +19,7 @@ export class EnchantResponseDto {
   @Expose()
   @Transform(
     ({ obj }: { obj: EnchantWithRelations }) => {
-      return obj.affix?.name;
+      return obj.affix?.value;
     },
     { toClassOnly: true },
   )

@@ -18,7 +18,7 @@ export class EnchantTransformer {
     const baseDto = new EnchantResponseDto();
     baseDto.name = enchant.name;
     baseDto.rank = enchant.rank.name;
-    baseDto.affix = enchant.affix.name;
+    baseDto.affix = enchant.affix.value;
     baseDto.slot = enchant.enchantSlot.map((slot) => ({
       name: slot.slot.name,
       value: slot.slot.value,

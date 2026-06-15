@@ -18,7 +18,13 @@ export class EnchantRepository {
   async findAllWithRelations(
     category: EnchantCategory = EnchantCategory.ENCHANT,
   ): Promise<EnchantWithRelations[]> {
-    return await this.prismaService.enchant.findMany({
+    if (category === EnchantCategory.ENCHANT) {
+      return await this.prismaService.enchant.findMany({
+        where: { category },
+        select: enchantWithRelationsSelect,
+      });
+    }
+    return await this.prismaService.infusion.findMany({
       where: { category },
       select: enchantWithRelationsSelect,
     });
@@ -52,7 +58,94 @@ export class EnchantRepository {
   }
 }
 
-const enchantWithRelationsSelect = Prisma.validator<Prisma.EnchantSelect>()({
+// const enchantWithRelationsSelect = Prisma.validator<Prisma.EnchantSelect>()({
+//   name: true,
+//   category: true,
+//   enchantSlot: {
+//     select: {
+//       slot: {
+//         select: {
+//           name: true,
+//           value: true,
+//         },
+//       },
+//     },
+//   },
+//   rank: {
+//     select: {
+//       name: true,
+//     },
+//   },
+//   affix: {
+//     select: {
+//       name: true,
+//     },
+//   },
+//   effects: {
+//     select: {
+//       stat: {
+//         select: {
+//           name: true,
+//         },
+//       },
+//       value: true,
+//     },
+//   },
+//   enchantDrop: {
+//     select: {
+//       item: {
+//         select: {
+//           name: true,
+//           image: true,
+//         },
+//       },
+//       raid: {
+//         select: {
+//           battle: true,
+//           image: true,
+//         },
+//       },
+//     },
+//   },
+// });
+
+// const infusionWithRelationsSelect = Prisma.validator<Prisma.InfusionSelect>()({
+//   name: true,
+//   category: true,
+//   enchantSlot: {
+//     select: {
+//       slot: {
+//         select: {
+//           name: true,
+//           value: true,
+//         },
+//       },
+//     },
+//   },
+//   rank: {
+//     select: {
+//       name: true,
+//     },
+//   },
+//   affix: {
+//     select: {
+//       name: true,
+//     },
+//   },
+//   effects: {
+//     select: {
+//       stat: {
+//         select: {
+//           name: true,
+//         },
+//       },
+//       value: true,
+//     },
+//   },
+// });
+
+// 1. 완벽하게 똑같은 공통 구조를 하나의 기본(Base) 객체로 선언합니다.
+const baseRelationsSelect = {
   name: true,
   category: true,
   enchantSlot: {
@@ -72,7 +165,7 @@ const enchantWithRelationsSelect = Prisma.validator<Prisma.EnchantSelect>()({
   },
   affix: {
     select: {
-      name: true,
+      value: true,
     },
   },
   effects: {
@@ -85,6 +178,10 @@ const enchantWithRelationsSelect = Prisma.validator<Prisma.EnchantSelect>()({
       value: true,
     },
   },
+};
+
+const enchantWithRelationsSelect = Prisma.validator<Prisma.EnchantSelect>()({
+  ...baseRelationsSelect,
   enchantDrop: {
     select: {
       item: {
