@@ -12,6 +12,7 @@ import { ItemResponseDto } from './dto/item-response.dto';
 import { SearchItemDto } from './dto/search-item.dto';
 import { UpdateItemDto } from './dto/item-update.dto';
 import { GrindMapper } from './mapper/grind-mapper';
+import { ItemSetOptionMapper } from './mapper/item-set-option-mapper';
 
 @Injectable()
 export class ItemService {
@@ -85,5 +86,13 @@ export class ItemService {
   async findGrindInfo() {
     const grinds = await this.itemRepository.findGrindInfo();
     return GrindMapper.toResponse(grinds);
+  }
+
+  async findItemSetOption() {
+    const itemSets = await this.itemRepository.findItemSetOption();
+    if (itemSets.length === 0) {
+      throw new NotFoundException('세트 옵션이 없습니다.');
+    }
+    return ItemSetOptionMapper.toResponse(itemSets);
   }
 }

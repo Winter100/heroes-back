@@ -74,10 +74,6 @@ export class GrindMapper {
     return [...map.values()];
   }
 
-  static toReponse(grindList: GrindWithRelations[]): GrindResponse[] {
-    return this.toResponse(grindList);
-  }
-
   private static getSlotKey(slots: string[]): string {
     return [...slots].sort().join('|');
   }

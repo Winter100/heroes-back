@@ -61,4 +61,9 @@ export class ItemController {
   async findGrindInfo() {
     return await this.itemService.findGrindInfo();
   }
+
+  @Get('set-option')
+  async findItemSetOption() {
+    return await this.itemService.findItemSetOption();
+  }
 }

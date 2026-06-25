@@ -98,6 +98,12 @@ export class ItemRepository {
       select: grindWithRelationsSelect,
     });
   }
+
+  async findItemSetOption() {
+    return await this.prismaService.itemSet.findMany({
+      select: itemSetOptionWithRelationsSelect,
+    });
+  }
 }
 
 export const grindWithRelationsSelect = Prisma.validator<Prisma.GrindSelect>()({
@@ -133,4 +139,43 @@ export const grindWithRelationsSelect = Prisma.validator<Prisma.GrindSelect>()({
 
 export type GrindWithRelations = Prisma.GrindGetPayload<{
   select: typeof grindWithRelationsSelect;
+}>;
+
+export const itemSetOptionWithRelationsSelect =
+  Prisma.validator<Prisma.ItemSetSelect>()({
+    name: true,
+    itemSetSlotList: {
+      select: {
+        slot: true,
+      },
+    },
+    itemSetList: {
+      select: {
+        item: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    },
+    itemSetBonus: {
+      select: {
+        level: {
+          select: {
+            level: true,
+          },
+        },
+        stat: {
+          select: {
+            name: true,
+            image: true,
+          },
+        },
+        statValue: true,
+      },
+    },
+  });
+
+export type ItemSetWithRelations = Prisma.ItemSetGetPayload<{
+  select: typeof itemSetOptionWithRelationsSelect;
 }>;
