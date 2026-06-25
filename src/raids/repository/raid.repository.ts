@@ -75,6 +75,7 @@ const raidWithRelationsSelect = Prisma.validator<Prisma.RaidSelect>()({
       stat: {
         select: {
           name: true,
+          image: true,
         },
       },
       value: true,

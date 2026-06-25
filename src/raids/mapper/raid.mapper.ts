@@ -15,6 +15,7 @@ export class RaidMapper {
         const dto: BossStatDto = {
           stat_name: cur.stat.name,
           stat_value: cur.value,
+          image: cur.stat.image ?? '',
         };
         if (cur.type === 'ENTRY') acc.entry.push(dto);
         else if (cur.type === 'LIMIT') acc.limit.push(dto);

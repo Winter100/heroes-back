@@ -9,8 +9,8 @@ import { RaidRepository } from './repository/raid.repository';
 import { RaidMapper } from './mapper/raid.mapper';
 import { RaidResponseDto, RaidTableResponseDto } from './dto/raid-response.dto';
 import { RaidTitleCreateDto } from './dto/raid-title-create.dto';
-import { RAID_IMAGE_BUCKET } from 'src/supabase/constant/burket';
 import { Raid, RaidTitle } from '@prisma/client';
+import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 
 @Injectable()
 export class RaidService {
@@ -40,7 +40,7 @@ export class RaidService {
   ): Promise<Raid> {
     const imageUrl = await this.imageUploadService.uploadImage(
       image,
-      RAID_IMAGE_BUCKET,
+      BUCKET_NAME.raidImages,
     );
 
     try {

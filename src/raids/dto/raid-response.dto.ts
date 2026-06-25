@@ -3,6 +3,7 @@ import { Expose } from 'class-transformer';
 export class BossStatDto {
   stat_name!: string;
   stat_value!: number;
+  image?: string;
 }
 
 class BonusTargetsDto {
