@@ -13,6 +13,7 @@ import { SearchItemDto } from './dto/search-item.dto';
 import { UpdateItemDto } from './dto/item-update.dto';
 import { GrindMapper } from './mapper/grind-mapper';
 import { ItemSetOptionMapper } from './mapper/item-set-option-mapper';
+import { ItemRecipeMapper } from './mapper/item-recipe-mapper';
 
 @Injectable()
 export class ItemService {
@@ -94,5 +95,17 @@ export class ItemService {
       throw new NotFoundException('세트 옵션이 없습니다.');
     }
     return ItemSetOptionMapper.toResponse(itemSets);
+  }
+
+  // Todo 매퍼 만들기
+  async getItemRecipe() {
+    const recipes = await this.itemRepository.getItemRecipe();
+
+    if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
+    return ItemRecipeMapper.toResponse(recipes);
+  }
+
+  async getUnImage() {
+    return await this.itemRepository.getUnImageItemsList();
   }
 }

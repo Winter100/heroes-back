@@ -35,7 +35,9 @@ export class ItemRepository {
       },
       data: {
         name: updateItemDto.name,
-        description: updateItemDto.description,
+        description: updateItemDto.description
+          ? updateItemDto.description
+          : undefined,
         image: image ? image : undefined,
         category: updateItemDto.category
           ? {
@@ -102,6 +104,24 @@ export class ItemRepository {
   async findItemSetOption() {
     return await this.prismaService.itemSet.findMany({
       select: itemSetOptionWithRelationsSelect,
+    });
+  }
+
+  async getItemRecipe() {
+    return await this.prismaService.item.findMany({
+      where: itemRecipeFilter,
+      select: itemRecipeWithRelationsSelect,
+    });
+  }
+
+  async getUnImageItemsList() {
+    return await this.prismaService.item.findMany({
+      where: {
+        image: null,
+      },
+      select: {
+        name: true,
+      },
     });
   }
 }
@@ -178,4 +198,55 @@ export const itemSetOptionWithRelationsSelect =
 
 export type ItemSetWithRelations = Prisma.ItemSetGetPayload<{
   select: typeof itemSetOptionWithRelationsSelect;
+}>;
+
+const itemRecipeFilter: Prisma.ItemWhereInput = {
+  recipesAsResult: {
+    some: {},
+  },
+};
+export const itemRecipeWithRelationsSelect =
+  Prisma.validator<Prisma.ItemSelect>()({
+    name: true,
+    description: true,
+    slot: true,
+    image: true,
+    category: {
+      select: {
+        name: true,
+      },
+    },
+    tier: {
+      select: {
+        name: true,
+      },
+    },
+    recipesAsResult: {
+      select: {
+        quantity: true,
+        description: true,
+        materialItem: {
+          select: {
+            name: true,
+            image: true,
+            description: true,
+            slot: true,
+            category: {
+              select: {
+                name: true,
+              },
+            },
+            tier: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+export type ItemRecipeWithRelations = Prisma.ItemGetPayload<{
+  select: typeof itemRecipeWithRelationsSelect;
 }>;

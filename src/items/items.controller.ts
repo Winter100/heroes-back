@@ -66,4 +66,14 @@ export class ItemController {
   async findItemSetOption() {
     return await this.itemService.findItemSetOption();
   }
+
+  @Get('recipe')
+  async getItemRecipe() {
+    return await this.itemService.getItemRecipe();
+  }
+
+  // @Get('un-image')
+  // async getUnImage() {
+  //   return await this.itemService.getUnImage();
+  // }
 }
