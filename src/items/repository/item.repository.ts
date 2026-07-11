@@ -108,7 +108,7 @@ export class ItemRepository {
   }
 
   async getItemRecipe() {
-    return await this.prismaService.item.findMany({
+    return await this.prismaService.equipmentStep.findMany({
       where: itemRecipeFilter,
       select: itemRecipeWithRelationsSelect,
     });
@@ -200,45 +200,76 @@ export type ItemSetWithRelations = Prisma.ItemSetGetPayload<{
   select: typeof itemSetOptionWithRelationsSelect;
 }>;
 
-const itemRecipeFilter: Prisma.ItemWhereInput = {
+// 레시피 수정하기.
+const itemRecipeFilter: Prisma.EquipmentStepWhereInput = {
   recipesAsResult: {
     some: {},
   },
 };
 export const itemRecipeWithRelationsSelect =
-  Prisma.validator<Prisma.ItemSelect>()({
-    name: true,
-    description: true,
-    slot: true,
-    image: true,
-    category: {
+  Prisma.validator<Prisma.EquipmentStepSelect>()({
+    stepName: true,
+    stats: {
       select: {
-        name: true,
+        stat: {
+          select: {
+            name: true,
+          },
+        },
+        value: true,
       },
     },
-    tier: {
+    item: {
       select: {
         name: true,
+        image: true,
+        description: true,
+        category: {
+          select: {
+            name: true,
+          },
+        },
+        tier: {
+          select: {
+            name: true,
+          },
+        },
+        slot: true,
       },
     },
     recipesAsResult: {
       select: {
         quantity: true,
         description: true,
-        materialItem: {
+        materialStep: {
           select: {
-            name: true,
-            image: true,
-            description: true,
-            slot: true,
-            category: {
+            stepName: true,
+            stats: {
               select: {
-                name: true,
+                stat: {
+                  select: {
+                    name: true,
+                  },
+                },
+                value: true,
               },
             },
-            tier: {
+            item: {
               select: {
                 name: true,
+                image: true,
+                description: true,
+                category: {
+                  select: {
+                    name: true,
+                  },
+                },
+                tier: {
+                  select: {
+                    name: true,
+                  },
+                },
+                slot: true,
               },
             },
           },
@@ -247,6 +278,6 @@ export const itemRecipeWithRelationsSelect =
     },
   });
 
-export type ItemRecipeWithRelations = Prisma.ItemGetPayload<{
+export type ItemRecipeWithRelations = Prisma.EquipmentStepGetPayload<{
   select: typeof itemRecipeWithRelationsSelect;
 }>;
