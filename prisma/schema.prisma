@@ -9,21 +9,68 @@ datasource db {
 }
 
 model Item {
-  id                Int      @id @default(autoincrement())
-  name              String @unique
-  description       String?
-  categoryId        Int
-  image           String
-  tierId            Int
-  category          Category @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tier              ItemTier @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  recipesAsResult   Recipe[] @relation("ResultItem")
-  recipesAsMaterial Recipe[] @relation("MaterialItem")
-
-  itemDrop ItemDrop[]
-  enchantDrop EnchantDrop[]
+  id                                Int               @id @default(autoincrement())
+  name                              String            @unique
+  description                       String?
+  categoryId                        Int
+  tierId                            Int
+  image                             String?
+  enchantDrop                       EnchantDrop[]
+  equipmentStep                     EquipmentStep[]
+  grindIngredient                   GrindIngredient[]
+  itemDrop                          ItemDrop[]
+  category                          Category          @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tier                              ItemTier          @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  slot                              Slot[]            @relation("ItemToSlot")
 
   @@map("items")
+}
+
+model EquipmentStep {
+  id       Int    @id @default(autoincrement())
+  itemId   Int
+  item     Item   @relation(fields: [itemId], references: [id])
+
+  stepName String
+
+  stats ItemStats[]
+
+  recipesAsResult   ItemRecipe[] @relation("ResultStep")
+  recipesAsMaterial ItemRecipe[] @relation("MaterialStep")
+
+  @@map("equipment_enhancements")
+}
+
+model ItemRecipe {
+  id Int @id @default(autoincrement())
+
+  resultId Int
+  resultStep EquipmentStep @relation("ResultStep", fields: [resultId], references: [id], onDelete: Cascade)
+
+  materialId Int
+  materialStep EquipmentStep @relation("MaterialStep", fields: [materialId], references: [id], onDelete: Cascade)
+
+  quantity Int
+  description String?
+
+  @@unique([resultId, materialId])
+  @@index([resultId])
+  @@index([materialId])
+  @@map("items_recipes")
+}
+
+model ItemStats {
+  id              Int           @id @default(autoincrement())
+  statId          Int
+  value           Int
+  equipmentStepId Int
+  equipmentStep   EquipmentStep @relation(fields: [equipmentStepId], references: [id], onDelete: Cascade)
+  stat            Stat          @relation(fields: [statId], references: [id], onDelete: Cascade)
+
+  @@unique([equipmentStepId, statId])
+  @@index([equipmentStepId])
+  @@index([statId])
+  @@map("items_stats")
 }
 
 model Category {
@@ -34,28 +81,15 @@ model Category {
   @@map("categories")
 }
 
-model Recipe {
-  id           Int  @id @default(autoincrement())
-  resultId     Int
-  materialId   Int
-  quantity     Int
-  resultItem   Item @relation("ResultItem", fields: [resultId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  materialItem Item @relation("MaterialItem", fields: [materialId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@map("recipes")
-}
-
-// 아이템 티어 (일반,초급,중급,고급,레어,전설)
 model ItemTier {
   id       Int       @id @default(autoincrement())
   name     String    @unique
-  items    Item[]
   enchants Enchant[]
+  items    Item[]
 
   @@map("tiers")
 }
 
-// 아이템 제작 타이틀 (전문기술, 세공 등)
 model ItemCraftTitle {
   id   Int    @id @default(autoincrement())
   name String @unique
@@ -63,141 +97,377 @@ model ItemCraftTitle {
   @@map("craftTitles")
 }
 
-// 아이템 제작 방법 (A아이템의 제작 방법은 세공, 금속 무기 등)
-// model ItemCraftMethod{
-
-// }
-
-// ---인챈트---
-
 model Enchant {
-  id      Int    @id @default(autoincrement())
-  name    String @unique
-  rankId  Int
-  tierId  Int
-  affixId Int
-
-  // image_id Int
-  rank  Rank     @relation(fields: [rankId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tier  ItemTier @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  affix Affix    @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
+  id          Int             @id @default(autoincrement())
+  name        String          @unique
+  rankId      Int
+  tierId      Int
+  affixId     Int
+  category    EnchantCategory @default(ENCHANT)
   effects     Effect[]
   enchantDrop EnchantDrop[]
   enchantSlot EnchantSlot[]
+  affix       Affix           @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rank        Rank            @relation(fields: [rankId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tier        ItemTier        @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("enchants")
 }
 
-model Rank {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+model Infusion {
+  id          Int             @id @default(autoincrement())
+  name        String
+  rankId      Int
+  affixId     Int
+  category    EnchantCategory @default(INFUSION)
+  effects     Effect[]
+  enchantDrop EnchantDrop[]
+  enchantSlot EnchantSlot[]
+  affix       Affix           @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  rank        Rank            @relation(fields: [rankId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  enchant Enchant[]
+  @@map("infusions")
+}
+
+model Partholn {
+  id      Int      @id @default(autoincrement())
+  name    Int
+  rank    Int
+  affixId Int
+  effects Effect[]
+  affix   Affix    @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("partholns")
+}
+
+model Rank {
+  id       Int        @id @default(autoincrement())
+  name     String     @unique
+  enchant  Enchant[]
+  infusion Infusion[]
 
   @@map("ranks")
 }
 
 model Affix {
-  id    Int    @id @default(autoincrement())
-  name  String @unique
-  value String @unique
-
-  enchant Enchant[]
+  id       Int        @id @default(autoincrement())
+  name     String     @unique
+  value    AffixType
+  enchant  Enchant[]
+  infusion Infusion[]
+  partholn Partholn[]
 
   @@map("affixs")
 }
 
 model Stat {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-
-  effects   Effect[]
-  bossStats BossStat[]
+  id            Int             @id @default(autoincrement())
+  name          String          @unique
+  image         String?
+  bossStats     BossStat[]
+  effects       Effect[]
+  grind         Grind[]
+  itemSetEffect ItemSetEffect[]
+  itemStats     ItemStats[]
 
   @@map("stats")
 }
 
 model Effect {
-  id Int @id @default(autoincrement())
-
-  enchantId Int
-  enchant   Enchant @relation(fields: [enchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  statId Int
-  stat   Stat @relation(fields: [statId], references: [id])
-
-  value String
+  id         Int       @id @default(autoincrement())
+  enchantId  Int?
+  statId     Int
+  value      String
+  partholnId Int?
+  infusionId Int?
+  enchant    Enchant?  @relation(fields: [enchantId], references: [id], onDelete: Cascade)
+  infusion   Infusion? @relation(fields: [infusionId], references: [id], onDelete: Cascade)
+  partholn   Partholn? @relation(fields: [partholnId], references: [id], onDelete: Cascade)
+  stat       Stat      @relation(fields: [statId], references: [id])
 
   @@map("effects")
 }
 
 model Slot {
-  id    Int    @id @default(autoincrement())
-  name  String @unique //슬롯 한글명
-  value String @unique //슬롯 실제 데이터 명
-
-  enchantSlot EnchantSlot[]
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+  value           String            @unique
+  enchantSlot     EnchantSlot[]
+  grindSlot       GrindSlot[]
+  itemSetSlotList ItemSetSlotList[]
+  item            Item[]            @relation("ItemToSlot")
 
   @@map("slots")
 }
 
-// 인챈트 가능 부위
 model EnchantSlot {
-  id Int @id @default(autoincrement())
-
-  slotId Int
-  slot   Slot @relation(fields: [slotId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  enchantId Int
-  enchant Enchant @relation(fields: [enchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  id         Int       @id @default(autoincrement())
+  slotId     Int
+  enchantId  Int?
+  infusionId Int?
+  enchant    Enchant?  @relation(fields: [enchantId], references: [id], onDelete: Cascade)
+  infusion   Infusion? @relation(fields: [infusionId], references: [id], onDelete: Cascade)
+  slot       Slot      @relation(fields: [slotId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("enchantSlots")
 }
 
-// ---레이드---
 model Raid {
-  id Int @id @default(autoincrement())
-
-  raidTitleId Int
-  raidTitle   RaidTitle @relation(fields: [raidTitleId], references: [id])
-
-  battle String @unique
-  boss   String
-  image  String
-  level  Int
-
-  bossStat         BossStat[]
-  bonusTargets     RaidBonusTarget[]
-  itemDrop         ItemDrop[]
-  enchantDrop      EnchantDrop[]
+  id               Int                @id @default(autoincrement())
+  raidTitleId      Int
+  battle           String             @unique
+  boss             String
+  image            String?
+  level            Int
   basicClearReward BasicClearReward[]
+  bossStat         BossStat[]
+  enchantDrop      EnchantDrop[]
+  itemDrop         ItemDrop[]
+  bonusTargets     RaidBonusTarget[]
+  raidTitle        RaidTitle          @relation(fields: [raidTitleId], references: [id])
 
   @@map("raids")
 }
 
 model RaidTitle {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-
+  id   Int     @id @default(autoincrement())
+  name String  @unique
+  grid Grind[]
   raid Raid[]
 
   @@map("raidTitles")
 }
 
 model BossStat {
-  id Int @id @default(autoincrement())
-
+  id     Int      @id @default(autoincrement())
   statId Int
-  stat   Stat @relation(fields: [statId], references: [id])
   value  Int
-
   raidId Int
-  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  type StatType
+  type   StatType
+  raid   Raid     @relation(fields: [raidId], references: [id], onDelete: Cascade)
+  stat   Stat     @relation(fields: [statId], references: [id])
 
   @@map("bossStats")
+}
+
+model RaidBonusTarget {
+  id     Int    @id @default(autoincrement())
+  bonus  String
+  value  String
+  raidId Int
+  raid   Raid   @relation(fields: [raidId], references: [id], onDelete: Cascade)
+
+  @@map("raidBonusTargets")
+}
+
+model ItemDrop {
+  id        Int     @id @default(autoincrement())
+  itemId    Int
+  raidId    Int
+  boostUp   Boolean
+  boostOnly Boolean
+  item      Item    @relation(fields: [itemId], references: [id])
+  raid      Raid    @relation(fields: [raidId], references: [id], onDelete: Cascade)
+
+  @@map("itemDrops")
+}
+
+model EnchantDrop {
+  id         Int       @id @default(autoincrement())
+  enchantId  Int?
+  raidId     Int?
+  itemId     Int?
+  infusionId Int?
+  enchant    Enchant?  @relation(fields: [enchantId], references: [id], onDelete: Cascade)
+  infusion   Infusion? @relation(fields: [infusionId], references: [id], onDelete: Cascade)
+  item       Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  raid       Raid?     @relation(fields: [raidId], references: [id], onDelete: Cascade)
+
+  @@map("enchantDrops")
+}
+
+model BasicClearRewardName {
+  id               Int                @id @default(autoincrement())
+  name             String             @unique
+  basicClearReward BasicClearReward[]
+
+  @@map("basicClearRewardNames")
+}
+
+model BasicClearReward {
+  id                     Int                  @id @default(autoincrement())
+  basicClearRewardNameId Int
+  value                  Int
+  raidId                 Int
+  basicClearRewardName   BasicClearRewardName @relation(fields: [basicClearRewardNameId], references: [id])
+  raid                   Raid                 @relation(fields: [raidId], references: [id], onDelete: Cascade)
+
+  @@map("basicClearRewards")
+}
+
+model Character {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  image          String
+  characterSkill CharacterSkill[]
+
+  @@map("characters")
+}
+
+model Skill {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  description    String
+  image          String
+  characterSkill CharacterSkill[]
+
+  @@map("skills")
+}
+
+model CharacterSkill {
+  id          Int       @id @default(autoincrement())
+  characterId Int
+  skillId     Int
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@map("characters_skills")
+}
+
+model User {
+  id            String        @id @default(uuid())
+  name          String        @unique
+  email         String        @unique
+  password      String
+  role          UserRole      @default(USER)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  refreshTokens RefreshToken?
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refreshToken")
+}
+
+model Grind {
+  id              Int               @id @default(autoincrement())
+  titleId         Int
+  statId          Int
+  statOneValue    Int               @map("stat_one_value")
+  statMaxValue    Int               @map("stat_max_value")
+  stat            Stat              @relation(fields: [statId], references: [id], onDelete: Cascade)
+  title           RaidTitle         @relation(fields: [titleId], references: [id], onDelete: Cascade)
+  grindIngredient GrindIngredient[]
+  grindSlot       GrindSlot[]
+
+  @@map("grinds")
+}
+
+model GrindSlot {
+  id      Int   @id @default(autoincrement())
+  grindId Int
+  slotId  Int
+  grind   Grind @relation(fields: [grindId], references: [id], onDelete: Cascade)
+  slot    Slot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@map("grinds_slots")
+}
+
+model GrindIngredient {
+  id       Int   @id @default(autoincrement())
+  grindId  Int
+  itemId   Int
+  quantity Int
+  grind    Grind @relation(fields: [grindId], references: [id], onDelete: Cascade)
+  item     Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([grindId, itemId])
+  @@index([itemId])
+  @@map("grinds_ingredients")
+}
+
+model ItemSet {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+  itemSetBonus    ItemSetEffect[]
+  itemSetList     ItemSetList[]
+  itemSetSlotList ItemSetSlotList[]
+
+  @@map("item_sets")
+}
+
+model ItemSetEffect {
+  id        Int          @id @default(autoincrement())
+  levelId   Int
+  setId     Int
+  statId    Int
+  statValue Int
+  level     ItemSetLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  set       ItemSet      @relation(fields: [setId], references: [id], onDelete: Cascade)
+  stat      Stat         @relation(fields: [statId], references: [id], onDelete: Cascade)
+
+  @@map("items_sets_effects")
+}
+
+model ItemSetLevel {
+  id            Int             @id @default(autoincrement())
+  level         Int
+  itemSetEffect ItemSetEffect[]
+
+  @@map("items_sets_level")
+}
+
+model ItemSetNameList {
+  id          Int           @id @default(autoincrement())
+  name        String        @unique
+  itemSetList ItemSetList[]
+
+  @@map("items_sets_name_list")
+}
+
+model ItemSetSlotList {
+  id     Int     @id @default(autoincrement())
+  setId  Int
+  slotId Int
+  set    ItemSet @relation(fields: [setId], references: [id], onDelete: Cascade)
+  slot   Slot    @relation(fields: [slotId], references: [id], onDelete: Cascade)
+
+  @@map("items_sets_slots_list")
+}
+
+model ItemSetList {
+  id            Int             @id @default(autoincrement())
+  setId         Int
+  itemSetListId Int
+  item          ItemSetNameList @relation(fields: [itemSetListId], references: [id], onDelete: Cascade)
+  set           ItemSet         @relation(fields: [setId], references: [id], onDelete: Cascade)
+
+  @@map("items_sets_list")
+}
+
+// 레시피는 삭제 예정
+model recipes {
+  id                              Int     @id @default(autoincrement())
+  resultId                        Int
+  materialId                      Int
+  quantity                        Int
+  description                     String?
+  @@unique([resultId, materialId])
+  @@index([materialId])
+  @@index([resultId])
+}
+
+enum EnchantCategory {
+  ENCHANT
+  INFUSION
 }
 
 enum StatType {
@@ -205,137 +475,14 @@ enum StatType {
   LIMIT
 }
 
-model RaidBonusTarget {
-  id Int @id @default(autoincrement())
-
-  bonus String
-  value String
-
-  raidId Int
-  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("raidBonusTargets")
-}
-
-// 보스 클리어시 얻을 수 있는 아이템 보상 및 부스트 적용 여부
-model ItemDrop {
-  id Int @id @default(autoincrement())
-
-  itemId Int
-  item   Item @relation(fields: [itemId], references: [id])
-
-  raidId Int
-  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  boostUp   Boolean
-  boostOnly Boolean
-
-  @@map("itemDrops")
-}
-
-model EnchantDrop {
-  id Int @id @default(autoincrement())
-
-  enchantId Int
-  enchant   Enchant @relation(fields: [enchantId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  raidId Int?
-  raid   Raid? @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  itemId Int?
-  item Item? @relation(fields: [itemId],references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("enchantDrops")
-}
-
-// 경험치, 골드, AP포인트
-model BasicClearRewardName {
-  id   Int    @id @default(autoincrement())
-  name String @unique
-
-  basicClearReward BasicClearReward[]
-
-  @@map("basicClearRewardNames")
-}
-
-// 보스 클리어시 얻는 기본 보상들 (경험치, 골드, AP포인트)
-model BasicClearReward {
-  id Int @id @default(autoincrement())
-
-  basicClearRewardNameId Int
-  basicClearRewardName   BasicClearRewardName @relation(fields: [basicClearRewardNameId], references: [id])
-  value                  Int
-
-  raidId Int
-  raid   Raid @relation(fields: [raidId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("basicClearRewards")
-}
-
-
-// 캐릭터 관련
-model Character {
-  id Int @id @default(autoincrement())
-
-  name String @unique
-  image String
-
-  characterSkill CharacterSkill[]
-
-  @@map("characters")
-}
-
-model Skill {
-  id  Int @id @default(autoincrement())
-
-  name String @unique
-  description String
-  image String
-
-  characterSkill CharacterSkill[]
-
-  @@map("skills")
-}
-
-model CharacterSkill {
-  id Int @id @default(autoincrement())
-
-  characterId Int
-  character Character @relation(fields: [characterId], references: [id], onDelete: Cascade,onUpdate: Cascade)
-
-  skillId Int
-  skill Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-
-  @@map("characters_skills")
-}
-
-model User {
-  id String @id @default(uuid())
-  name String @unique
-  email String @unique
-  password String
-  role UserRole @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  refreshTokens RefreshToken[]
-
-  @@map("users")
-}
-
 enum UserRole {
   USER
   ADMIN
 }
 
-model RefreshToken {
-  id String @id @default(uuid())
-  token String @unique
-  expiresAt DateTime
-
-  userId String
-  user User @relation(fields: [userId], references: [id],onDelete: Cascade)
-
-@@unique([userId])
-@@map("refreshToken")
+enum AffixType {
+  PREFIX
+  SUFFIX
+  INFUSION
+  PARTHOLN
 }
