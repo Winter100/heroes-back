@@ -127,6 +127,7 @@ export class ItemRepository {
 }
 
 export const grindWithRelationsSelect = Prisma.validator<Prisma.GrindSelect>()({
+  id: true,
   title: {
     select: {
       name: true,
@@ -141,6 +142,7 @@ export const grindWithRelationsSelect = Prisma.validator<Prisma.GrindSelect>()({
   statMaxValue: true,
   grindIngredient: {
     select: {
+      id: true,
       item: {
         select: {
           name: true,
@@ -235,6 +237,88 @@ export const itemRecipeWithRelationsSelect =
           },
         },
         slot: true,
+        itemSetList: {
+          select: {
+            item: {
+              select: {
+                name: true, // 아이템이 갖게되는 대표 타이틀 1개 ("밀레시안 무기", "오르나 무기" 등등)
+              },
+            },
+            setId: true,
+            set: {
+              select: {
+                id: true,
+                name: true,
+                itemSetList: {
+                  select: {
+                    item: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                  },
+                },
+                itemSetSlotList: {
+                  select: {
+                    slot: {
+                      select: {
+                        name: true,
+                        value: true,
+                      },
+                    },
+                  },
+                },
+                itemSetBonus: {
+                  select: {
+                    level: true,
+                    stat: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                    statValue: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        itemGrind: {
+          select: {
+            grind: {
+              select: {
+                title: {
+                  select: {
+                    name: true,
+                  },
+                },
+                grindSlot: {
+                  select: {
+                    slot: true,
+                  },
+                },
+                stat: {
+                  select: {
+                    name: true,
+                  },
+                },
+                statOneValue: true,
+                statMaxValue: true,
+                grindIngredient: {
+                  select: {
+                    quantity: true,
+                    item: {
+                      select: {
+                        name: true,
+                        image: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     },
     recipesAsResult: {
@@ -270,6 +354,87 @@ export const itemRecipeWithRelationsSelect =
                   },
                 },
                 slot: true,
+                itemSetList: {
+                  select: {
+                    item: {
+                      select: {
+                        name: true,
+                      },
+                    },
+                    set: {
+                      select: {
+                        id: true,
+                        name: true,
+                        itemSetList: {
+                          select: {
+                            item: {
+                              select: {
+                                name: true,
+                              },
+                            },
+                          },
+                        },
+                        itemSetSlotList: {
+                          select: {
+                            slot: {
+                              select: {
+                                name: true,
+                                value: true,
+                              },
+                            },
+                          },
+                        },
+                        itemSetBonus: {
+                          select: {
+                            level: true,
+                            stat: {
+                              select: {
+                                name: true,
+                              },
+                            },
+                            statValue: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                itemGrind: {
+                  select: {
+                    grind: {
+                      select: {
+                        title: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                        grindSlot: {
+                          select: {
+                            slot: true,
+                          },
+                        },
+                        stat: {
+                          select: {
+                            name: true,
+                          },
+                        },
+                        statOneValue: true,
+                        statMaxValue: true,
+                        grindIngredient: {
+                          select: {
+                            quantity: true,
+                            item: {
+                              select: {
+                                name: true,
+                                image: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
           },
