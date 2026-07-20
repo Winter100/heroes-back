@@ -311,6 +311,7 @@ export const itemRecipeWithRelationsSelect =
                       select: {
                         name: true,
                         image: true,
+                        slot: true,
                       },
                     },
                   },
@@ -427,6 +428,7 @@ export const itemRecipeWithRelationsSelect =
                               select: {
                                 name: true,
                                 image: true,
+                                slot: true,
                               },
                             },
                           },

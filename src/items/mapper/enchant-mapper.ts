@@ -7,6 +7,9 @@ export class EnchantMapper {
         name: enchant.name,
         rank: enchant.rank.name,
         affix: enchant.affix.value,
+        // slot: getUniqueBaseStrings(
+        //   enchant.enchantSlot.map((slot) => slot.slot.name),
+        // ),
         slot: enchant.enchantSlot.map((slot) => ({
           name: slot.slot.name,
           value: slot.slot.value,
@@ -45,4 +48,13 @@ interface FormattedDropResult {
   name: string;
   image: string | null;
   type: 'item' | 'raid';
+}
+
+export function getUniqueBaseStrings(inputArray: string[]): string[] {
+  const suffixRegex = /\s*\([a-zA-Z]\)$/;
+
+  const uniqueSet = new Set<string>(
+    inputArray.map((str) => str.replace(suffixRegex, '').trim()),
+  );
+  return Array.from(uniqueSet);
 }

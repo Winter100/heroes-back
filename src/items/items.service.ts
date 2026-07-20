@@ -14,6 +14,7 @@ import { UpdateItemDto } from './dto/item-update.dto';
 import { GrindMapper } from './mapper/grind-mapper';
 import { ItemSetOptionMapper } from './mapper/item-set-option-mapper';
 import { ItemRecipeMapper } from './mapper/item-recipe-mapper';
+import { sortRecipe } from './utils/utils';
 // import { ItemRecipeMapper } from './mapper/item-recipe-mapper';
 
 @Injectable()
@@ -102,8 +103,7 @@ export class ItemService {
     const recipes = await this.itemRepository.getItemRecipe();
 
     if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
-
-    return ItemRecipeMapper.toResponse(recipes);
+    return sortRecipe(ItemRecipeMapper.toResponse(recipes));
   }
 
   async getUnImage() {
