@@ -3,15 +3,15 @@ import { IsNumber, IsString } from 'class-validator';
 
 export class RaidCreateDto {
   @IsString()
-  raidName: string;
+  raidName!: string;
 
   @IsString()
-  battle: string;
+  battle!: string;
 
   @IsString()
-  boss: string;
+  boss!: string;
 
   @Type(() => Number)
   @IsNumber()
-  level: number;
+  level!: number;
 }

@@ -1,11 +1,11 @@
 import { Expose } from 'class-transformer';
 
 export class CharacterClassResponseDto {
-  id: number;
+  id!: number;
 
   @Expose()
-  name: string;
+  name!: string;
 
   @Expose()
-  image: string;
+  image!: string;
 }

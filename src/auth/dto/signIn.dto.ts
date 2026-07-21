@@ -5,9 +5,9 @@ import { SignUpDto } from './signUp.dto';
 export class SignInDto extends OmitType(SignUpDto, ['name']) {
   @IsEmail()
   @IsNotEmpty()
-  email: string;
+  email!: string;
 
   @IsString()
   @IsNotEmpty()
-  password: string;
+  password!: string;
 }

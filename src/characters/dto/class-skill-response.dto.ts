@@ -2,11 +2,11 @@ import { Expose } from 'class-transformer';
 
 export class ClassSkillResponseDto {
   @Expose()
-  name: string;
+  name!: string;
 
   @Expose()
-  description: string;
+  description!: string;
 
   @Expose()
-  image: string;
+  image!: string;
 }

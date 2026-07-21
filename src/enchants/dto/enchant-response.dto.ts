@@ -1,7 +1,6 @@
 import { EnchantWithRelations } from './../repository/enchant.respository';
 import { Exclude, Expose, Transform } from 'class-transformer';
 
-// Todo: Mapper 형식으로 변환하기
 @Exclude()
 export class EnchantResponseDto {
   @Expose()
