@@ -12,6 +12,7 @@ import { PartholnModule } from './partholn/partholn.module';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import Redis from 'ioredis';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     UsersModule,
     ItemsModule,
     PartholnModule,
+    HealthModule,
   ],
   controllers: [],
   providers: [],
