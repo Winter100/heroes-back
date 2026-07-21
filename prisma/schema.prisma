@@ -9,49 +9,51 @@ datasource db {
 }
 
 model Item {
-  id                                Int               @id @default(autoincrement())
-  name                              String            @unique
-  description                       String?
-  categoryId                        Int
-  tierId                            Int
-  image                             String?
-  enchantDrop                       EnchantDrop[]
-  equipmentStep                     EquipmentStep[]
-  grindIngredient                   GrindIngredient[]
-  itemDrop                          ItemDrop[]
-  category                          Category          @relation(fields: [categoryId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  tier                              ItemTier          @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  slot                              Slot[]            @relation("ItemToSlot")
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  categoryId  Int
+  tierId      Int
+  image       String?
+  slotId      Int?
+
+  slot Slot? @relation(fields: [slotId], references: [id])
+
+  category Category @relation(fields: [categoryId], references: [id])
+  tier     ItemTier @relation(fields: [tierId], references: [id])
+
+  enchantDrop     EnchantDrop[]
+  equipmentStep   EquipmentStep[]
+  grindIngredient GrindIngredient[]
+  itemDrop        ItemDrop[]
+  itemGrind       ItemGrind[]
+  itemSetList     ItemSetList[]
 
   @@map("items")
 }
 
 model EquipmentStep {
-  id       Int    @id @default(autoincrement())
-  itemId   Int
-  item     Item   @relation(fields: [itemId], references: [id])
-
-  stepName String
-
-  stats ItemStats[]
-
-  recipesAsResult   ItemRecipe[] @relation("ResultStep")
+  id                Int          @id @default(autoincrement())
+  itemId            Int
+  stepName          String
+  item              Item         @relation(fields: [itemId], references: [id])
   recipesAsMaterial ItemRecipe[] @relation("MaterialStep")
+  recipesAsResult   ItemRecipe[] @relation("ResultStep")
+  stats             ItemStats[]
 
+  @@unique([itemId, stepName])
+  @@index([itemId])
   @@map("equipment_enhancements")
 }
 
 model ItemRecipe {
-  id Int @id @default(autoincrement())
-
-  resultId Int
-  resultStep EquipmentStep @relation("ResultStep", fields: [resultId], references: [id], onDelete: Cascade)
-
-  materialId Int
+  id           Int           @id @default(autoincrement())
+  resultId     Int
+  materialId   Int
+  quantity     Int
+  description  String?
   materialStep EquipmentStep @relation("MaterialStep", fields: [materialId], references: [id], onDelete: Cascade)
-
-  quantity Int
-  description String?
+  resultStep   EquipmentStep @relation("ResultStep", fields: [resultId], references: [id], onDelete: Cascade)
 
   @@unique([resultId, materialId])
   @@index([resultId])
@@ -195,7 +197,7 @@ model Slot {
   enchantSlot     EnchantSlot[]
   grindSlot       GrindSlot[]
   itemSetSlotList ItemSetSlotList[]
-  item            Item[]            @relation("ItemToSlot")
+  item            Item[]
 
   @@map("slots")
 }
@@ -283,6 +285,10 @@ model EnchantDrop {
   item       Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   raid       Raid?     @relation(fields: [raidId], references: [id], onDelete: Cascade)
 
+  @@unique([itemId, enchantId])
+  @@unique([raidId, enchantId])
+  @@unique([raidId, itemId])
+  @@unique([raidId, infusionId])
   @@map("enchantDrops")
 }
 
@@ -367,8 +373,20 @@ model Grind {
   title           RaidTitle         @relation(fields: [titleId], references: [id], onDelete: Cascade)
   grindIngredient GrindIngredient[]
   grindSlot       GrindSlot[]
+  itemGrind       ItemGrind[]
 
   @@map("grinds")
+}
+
+model ItemGrind {
+  id      Int   @id @default(autoincrement())
+  grindId Int
+  itemId  Int
+  grind   Grind @relation(fields: [grindId], references: [id], onDelete: Cascade)
+  item    Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([grindId, itemId])
+  @@map("item_grinds")
 }
 
 model GrindSlot {
@@ -447,19 +465,24 @@ model ItemSetList {
   id            Int             @id @default(autoincrement())
   setId         Int
   itemSetListId Int
+  equipmentId   Int?
+  equipment     Item?           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   item          ItemSetNameList @relation(fields: [itemSetListId], references: [id], onDelete: Cascade)
   set           ItemSet         @relation(fields: [setId], references: [id], onDelete: Cascade)
 
+  @@index([setId])
+  @@index([itemSetListId])
+  @@index([equipmentId])
   @@map("items_sets_list")
 }
 
-// 레시피는 삭제 예정
 model recipes {
-  id                              Int     @id @default(autoincrement())
-  resultId                        Int
-  materialId                      Int
-  quantity                        Int
-  description                     String?
+  id          Int     @id @default(autoincrement())
+  resultId    Int
+  materialId  Int
+  quantity    Int
+  description String?
+
   @@unique([resultId, materialId])
   @@index([materialId])
   @@index([resultId])
