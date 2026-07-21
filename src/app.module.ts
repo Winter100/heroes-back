@@ -6,15 +6,33 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SupabaseModule } from './supabase/supabase.module';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ItemsModule } from './items/items.module';
 import { PartholnModule } from './partholn/partholn.module';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import Redis from 'ioredis';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: 60000,
+            limit: 500,
+          },
+        ],
+        storage: new ThrottlerStorageRedisService(
+          new Redis(configService.get<string>('UPSTASH_REDIS_URL')!),
+        ),
+      }),
     }),
     PrismaModule,
     SupabaseModule,

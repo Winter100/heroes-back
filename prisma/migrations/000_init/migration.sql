@@ -35,6 +35,17 @@ CREATE TABLE "public"."equipment_enhancements" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."items_recipes" (
+    "id" SERIAL NOT NULL,
+    "resultId" INTEGER NOT NULL,
+    "materialId" INTEGER NOT NULL,
+    "quantity" INTEGER NOT NULL,
+    "description" TEXT,
+
+    CONSTRAINT "items_recipes_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."items_stats" (
     "id" SERIAL NOT NULL,
     "statId" INTEGER NOT NULL,
@@ -302,6 +313,15 @@ CREATE TABLE "public"."grinds" (
 );
 
 -- CreateTable
+CREATE TABLE "public"."item_grinds" (
+    "id" SERIAL NOT NULL,
+    "grindId" INTEGER NOT NULL,
+    "itemId" INTEGER NOT NULL,
+
+    CONSTRAINT "item_grinds_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "public"."grinds_slots" (
     "id" SERIAL NOT NULL,
     "grindId" INTEGER NOT NULL,
@@ -369,6 +389,7 @@ CREATE TABLE "public"."items_sets_list" (
     "id" SERIAL NOT NULL,
     "setId" INTEGER NOT NULL,
     "itemSetListId" INTEGER NOT NULL,
+    "equipmentId" INTEGER,
 
     CONSTRAINT "items_sets_list_pkey" PRIMARY KEY ("id")
 );
@@ -396,7 +417,13 @@ CREATE TABLE "public"."_ItemToSlot" (
 CREATE UNIQUE INDEX "items_name_key" ON "public"."items"("name");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "equipment_enhancements_itemId_stepName_key" ON "public"."equipment_enhancements"("itemId", "stepName");
+CREATE INDEX "items_recipes_resultId_idx" ON "public"."items_recipes"("resultId");
+
+-- CreateIndex
+CREATE INDEX "items_recipes_materialId_idx" ON "public"."items_recipes"("materialId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "items_recipes_resultId_materialId_key" ON "public"."items_recipes"("resultId", "materialId");
 
 -- CreateIndex
 CREATE INDEX "items_stats_equipmentStepId_idx" ON "public"."items_stats"("equipmentStepId");
@@ -441,6 +468,18 @@ CREATE UNIQUE INDEX "raids_battle_key" ON "public"."raids"("battle");
 CREATE UNIQUE INDEX "raidTitles_name_key" ON "public"."raidTitles"("name");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "enchantDrops_itemId_enchantId_key" ON "public"."enchantDrops"("itemId", "enchantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "enchantDrops_raidId_enchantId_key" ON "public"."enchantDrops"("raidId", "enchantId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "enchantDrops_raidId_itemId_key" ON "public"."enchantDrops"("raidId", "itemId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "enchantDrops_raidId_infusionId_key" ON "public"."enchantDrops"("raidId", "infusionId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "basicClearRewardNames_name_key" ON "public"."basicClearRewardNames"("name");
 
 -- CreateIndex
@@ -462,6 +501,9 @@ CREATE UNIQUE INDEX "refreshToken_token_key" ON "public"."refreshToken"("token")
 CREATE UNIQUE INDEX "refreshToken_userId_key" ON "public"."refreshToken"("userId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "item_grinds_grindId_itemId_key" ON "public"."item_grinds"("grindId", "itemId");
+
+-- CreateIndex
 CREATE INDEX "grinds_ingredients_itemId_idx" ON "public"."grinds_ingredients"("itemId");
 
 -- CreateIndex
@@ -472,6 +514,15 @@ CREATE UNIQUE INDEX "item_sets_name_key" ON "public"."item_sets"("name");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "items_sets_name_list_name_key" ON "public"."items_sets_name_list"("name");
+
+-- CreateIndex
+CREATE INDEX "items_sets_list_setId_idx" ON "public"."items_sets_list"("setId");
+
+-- CreateIndex
+CREATE INDEX "items_sets_list_itemSetListId_idx" ON "public"."items_sets_list"("itemSetListId");
+
+-- CreateIndex
+CREATE INDEX "items_sets_list_equipmentId_idx" ON "public"."items_sets_list"("equipmentId");
 
 -- CreateIndex
 CREATE INDEX "recipes_materialId_idx" ON "public"."recipes"("materialId");
@@ -492,7 +543,13 @@ ALTER TABLE "public"."items" ADD CONSTRAINT "items_categoryId_fkey" FOREIGN KEY 
 ALTER TABLE "public"."items" ADD CONSTRAINT "items_tierId_fkey" FOREIGN KEY ("tierId") REFERENCES "public"."tiers"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
 
 -- AddForeignKey
-ALTER TABLE "public"."equipment_enhancements" ADD CONSTRAINT "equipment_enhancements_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "public"."items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "public"."equipment_enhancements" ADD CONSTRAINT "equipment_enhancements_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "public"."items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."items_recipes" ADD CONSTRAINT "items_recipes_materialId_fkey" FOREIGN KEY ("materialId") REFERENCES "public"."equipment_enhancements"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."items_recipes" ADD CONSTRAINT "items_recipes_resultId_fkey" FOREIGN KEY ("resultId") REFERENCES "public"."equipment_enhancements"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."items_stats" ADD CONSTRAINT "items_stats_equipmentStepId_fkey" FOREIGN KEY ("equipmentStepId") REFERENCES "public"."equipment_enhancements"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -591,6 +648,12 @@ ALTER TABLE "public"."grinds" ADD CONSTRAINT "grinds_statId_fkey" FOREIGN KEY ("
 ALTER TABLE "public"."grinds" ADD CONSTRAINT "grinds_titleId_fkey" FOREIGN KEY ("titleId") REFERENCES "public"."raidTitles"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."item_grinds" ADD CONSTRAINT "item_grinds_grindId_fkey" FOREIGN KEY ("grindId") REFERENCES "public"."grinds"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "public"."item_grinds" ADD CONSTRAINT "item_grinds_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "public"."items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."grinds_slots" ADD CONSTRAINT "grinds_slots_grindId_fkey" FOREIGN KEY ("grindId") REFERENCES "public"."grinds"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -618,16 +681,13 @@ ALTER TABLE "public"."items_sets_slots_list" ADD CONSTRAINT "items_sets_slots_li
 ALTER TABLE "public"."items_sets_slots_list" ADD CONSTRAINT "items_sets_slots_list_slotId_fkey" FOREIGN KEY ("slotId") REFERENCES "public"."slots"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "public"."items_sets_list" ADD CONSTRAINT "items_sets_list_equipmentId_fkey" FOREIGN KEY ("equipmentId") REFERENCES "public"."items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "public"."items_sets_list" ADD CONSTRAINT "items_sets_list_itemSetListId_fkey" FOREIGN KEY ("itemSetListId") REFERENCES "public"."items_sets_name_list"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."items_sets_list" ADD CONSTRAINT "items_sets_list_setId_fkey" FOREIGN KEY ("setId") REFERENCES "public"."item_sets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."recipes" ADD CONSTRAINT "recipes_materialId_fkey" FOREIGN KEY ("materialId") REFERENCES "public"."items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."recipes" ADD CONSTRAINT "recipes_resultId_fkey" FOREIGN KEY ("resultId") REFERENCES "public"."items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."_ItemToSlot" ADD CONSTRAINT "_ItemToSlot_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."items"("id") ON DELETE CASCADE ON UPDATE CASCADE;

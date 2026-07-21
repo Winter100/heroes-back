@@ -1,6 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PartholnRepository } from './repository/partholn.repository';
 import { PartholnType } from './constant/partholn';
+import { PartholnMapper } from './mapper/partholn-mapper';
 
 @Injectable()
 export class PartholnService {
@@ -8,12 +9,9 @@ export class PartholnService {
 
   async findAll(): Promise<PartholnType[]> {
     const data = await this.partholnRepository.findPartholn();
-    return data.map(({ effects, ...rest }) => ({
-      ...rest,
-      effects: effects.map((e) => ({
-        stat_name: e.stat.name,
-        stat_value: e.value,
-      })),
-    }));
+    if (data.length === 0)
+      throw new NotFoundException('파르홀른 데이터를 찾지 못했습니다.');
+
+    return PartholnMapper.toResponse(data);
   }
 }

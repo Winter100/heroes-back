@@ -6,8 +6,8 @@ import {
 } from './dto/enchant-response.dto';
 import { EnchantTransformer } from './enchant-transformer';
 import { EnchantDropCreateDto } from './dto/enchant-drop-create.dto';
-import { plainToInstance } from 'class-transformer';
 import { EnchantCategory } from '@prisma/client';
+import { EnchantMapper } from 'src/items/mapper/enchant-mapper';
 
 @Injectable()
 export class EnchantService {
@@ -21,7 +21,7 @@ export class EnchantService {
 
     if (!enchants) return [];
 
-    return plainToInstance(EnchantResponseDto, enchants);
+    return EnchantMapper.toResponse(enchants);
   }
 
   async findEnchantDrop(): Promise<EnchantDropResponseDto[]> {

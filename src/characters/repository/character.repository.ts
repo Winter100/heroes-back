@@ -48,6 +48,15 @@ export class CharacterRepository implements UCharacterRepository {
     });
   }
 
+  async getCharacterImage() {
+    return await this.prismaService.character.findMany({
+      select: {
+        name: true,
+        image: true,
+      },
+    });
+  }
+
   async createClassSkill(className: string, skillId: number) {
     await this.prismaService.characterSkill.create({
       data: {

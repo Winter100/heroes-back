@@ -20,7 +20,9 @@ import { ItemResponseDto } from './dto/item-response.dto';
 import { SearchItemDto } from './dto/search-item.dto';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { UpdateItemDto } from './dto/item-update.dto';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
+@UseGuards(ThrottlerGuard)
 @Controller('items')
 export class ItemController {
   constructor(private readonly itemService: ItemService) {}

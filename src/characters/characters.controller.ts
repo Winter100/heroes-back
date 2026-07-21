@@ -53,6 +53,11 @@ export class CharactersController {
     return await this.charactersService.createClassSkill(createSkillDto, image);
   }
 
+  @Get('image')
+  async getCharacterImage() {
+    return await this.charactersService.getCharacterImage();
+  }
+
   // 해당 직업과 모든 스킬 반환
   @Get(':className')
   async findSkillsByClassName(

@@ -62,6 +62,14 @@ export class CharactersService {
     return [];
   }
 
+  async getCharacterImage() {
+    const characters = await this.characterRepository.getCharacterImage();
+
+    if (!characters) throw new NotFoundException(`캐릭터 정보가 없습니다.`);
+
+    return characters;
+  }
+
   async findSkillsByClassName(className: string): Promise<ClassResponseDto> {
     const result =
       await this.characterRepository.findSkillsByClassName(className);

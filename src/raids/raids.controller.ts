@@ -19,15 +19,17 @@ import { Raid, RaidTitle, UserRole } from '@prisma/client';
 import { RaidCreateDto } from './dto/raid-create.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImageValidationPipe } from 'src/characters/pipes/image-validation.pipe';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
+@UseGuards(ThrottlerGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ excludeExtraneousValues: true })
 @Controller('raids')
 export class RaidsController {
   constructor(private readonly raidService: RaidService) {}
 
-  // @Roles(UserRole.ADMIN)
-  // @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor('image'))
   @Post()
   async createRaid(
@@ -58,7 +60,6 @@ export class RaidsController {
 
   @Post('drops')
   addItemDrop() {
-    // 레이드 아이템 드롭 정보 추가 하기
     return;
   }
 }
