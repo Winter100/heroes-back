@@ -21,6 +21,14 @@ export class RaidRepository {
     });
   }
 
+  async findBattle(battle: string) {
+    return await this.prisma.raid.findUnique({
+      where: {
+        battle,
+      },
+    });
+  }
+
   async updateBattleImage(battle: string, imgaeUrl: string) {
     return await this.prisma.raid.update({
       where: { battle: battle },

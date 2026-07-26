@@ -13,6 +13,8 @@ import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis'
 import Redis from 'ioredis';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './health/health.module';
+import { NoticeModule } from './notice/notice.module';
+import { NexonModule } from './nexon/nexon.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { HealthModule } from './health/health.module';
     ItemsModule,
     PartholnModule,
     HealthModule,
+    NoticeModule,
+    NexonModule,
   ],
   controllers: [],
   providers: [],

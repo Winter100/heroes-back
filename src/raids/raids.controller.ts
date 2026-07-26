@@ -5,6 +5,7 @@ import {
   ClassSerializerInterceptor,
   Controller,
   Get,
+  Patch,
   Post,
   SerializeOptions,
   UploadedFile,
@@ -20,6 +21,7 @@ import { RaidCreateDto } from './dto/raid-create.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ImageValidationPipe } from 'src/characters/pipes/image-validation.pipe';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { UpdateRaidDto } from './dto/raid-update.dto';
 
 @UseGuards(ThrottlerGuard)
 @UseInterceptors(ClassSerializerInterceptor)
@@ -33,10 +35,21 @@ export class RaidsController {
   @UseInterceptors(FileInterceptor('image'))
   @Post()
   async createRaid(
-    @Body() raidCreateDto: RaidCreateDto,
+    @Body() createRaidDto: RaidCreateDto,
     @UploadedFile(ImageValidationPipe) image: Express.Multer.File,
   ): Promise<Raid> {
-    return await this.raidService.createRaid(raidCreateDto, image);
+    return await this.raidService.createRaid(createRaidDto, image);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseInterceptors(FileInterceptor('image'))
+  @Patch('update')
+  async updateRaid(
+    @Body() updateRaidDto: UpdateRaidDto,
+    @UploadedFile(ImageValidationPipe) image?: Express.Multer.File,
+  ): Promise<{ message: string }> {
+    return await this.raidService.updateRaid(updateRaidDto, image);
   }
 
   @Roles(UserRole.ADMIN)
