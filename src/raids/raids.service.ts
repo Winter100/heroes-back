@@ -13,6 +13,7 @@ import { RaidTitleCreateDto } from './dto/raid-title-create.dto';
 import { Raid, RaidTitle } from '@prisma/client';
 import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { UpdateRaidDto } from './dto/raid-update.dto';
+import { raidSort } from './utils/raid.util';
 
 @Injectable()
 export class RaidService {
@@ -33,7 +34,7 @@ export class RaidService {
     const dbRaid = await this.findAllRaid();
 
     const response = RaidMapper.toRaidTableResponse(dbRaid);
-    return response;
+    return raidSort(response);
   }
 
   async createRaid(
