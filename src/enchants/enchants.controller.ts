@@ -34,8 +34,8 @@ export class EnchantsController {
     return await this.enchantService.findAllEnchant(query.category);
   }
 
-  // @Get('drop')
-  // async findEnchantDrop() {
-  //   return await this.enchantService.findEnchantDrop();
-  // }
+  @Get('price')
+  async findPriceAll() {
+    return await this.enchantService.findAllPrice();
+  }
 }
