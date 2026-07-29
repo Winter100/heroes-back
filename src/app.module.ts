@@ -11,10 +11,11 @@ import { ItemsModule } from './items/items.module';
 import { PartholnModule } from './partholn/partholn.module';
 import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
 import Redis from 'ioredis';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './health/health.module';
 import { NoticeModule } from './notice/notice.module';
 import { NexonModule } from './nexon/nexon.module';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -29,7 +30,7 @@ import { NexonModule } from './nexon/nexon.module';
         throttlers: [
           {
             ttl: 60000,
-            limit: 500,
+            limit: 5000,
           },
         ],
         storage: new ThrottlerStorageRedisService(
@@ -51,6 +52,11 @@ import { NexonModule } from './nexon/nexon.module';
     NexonModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

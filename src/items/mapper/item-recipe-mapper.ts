@@ -221,12 +221,12 @@ const convertSetOptions = (data: convertStatData[]): setOptionType[] => {
     if (!levelMap.has(currentLevel)) {
       levelMap.set(currentLevel, {
         level: currentLevel,
-        effects: [],
+        stat_bonus: [],
       });
     }
 
     const group = levelMap.get(currentLevel)!;
-    group.effects.push({
+    group.stat_bonus.push({
       stat_name: item.stat.name,
       stat_value: item.statValue,
     });
@@ -237,7 +237,7 @@ const convertSetOptions = (data: convertStatData[]): setOptionType[] => {
 
 type setOptionType = {
   level: number;
-  effects: { stat_name: string; stat_value: number }[];
+  stat_bonus: { stat_name: string; stat_value: number }[];
 };
 
 type convertStatData = {
