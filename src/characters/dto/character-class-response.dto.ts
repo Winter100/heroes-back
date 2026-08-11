@@ -7,5 +7,5 @@ export class CharacterClassResponseDto {
   name!: string;
 
   @Expose()
-  image!: string;
+  image?: string;
 }

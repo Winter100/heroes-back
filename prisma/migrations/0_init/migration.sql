@@ -13,6 +13,12 @@ CREATE TYPE "public"."UserRole" AS ENUM ('USER', 'ADMIN');
 -- CreateEnum
 CREATE TYPE "public"."AffixType" AS ENUM ('PREFIX', 'SUFFIX', 'INFUSION', 'PARTHOLN');
 
+-- CreateEnum
+CREATE TYPE "public"."BattleType" AS ENUM ('melee', 'ranged');
+
+-- CreateEnum
+CREATE TYPE "public"."Gender" AS ENUM ('male', 'female');
+
 -- CreateTable
 CREATE TABLE "public"."items" (
     "id" SERIAL NOT NULL,
@@ -21,6 +27,7 @@ CREATE TABLE "public"."items" (
     "categoryId" INTEGER NOT NULL,
     "tierId" INTEGER NOT NULL,
     "image" TEXT,
+    "slotId" INTEGER,
 
     CONSTRAINT "items_pkey" PRIMARY KEY ("id")
 );
@@ -255,6 +262,9 @@ CREATE TABLE "public"."characters" (
     "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "image" TEXT NOT NULL,
+    "battleType" "public"."BattleType",
+    "gender" "public"."Gender",
+    "releaseDate" DATE,
 
     CONSTRAINT "characters_pkey" PRIMARY KEY ("id")
 );
@@ -405,16 +415,14 @@ CREATE TABLE "public"."recipes" (
     CONSTRAINT "recipes_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "public"."_ItemToSlot" (
-    "A" INTEGER NOT NULL,
-    "B" INTEGER NOT NULL,
-
-    CONSTRAINT "_ItemToSlot_AB_pkey" PRIMARY KEY ("A","B")
-);
-
 -- CreateIndex
 CREATE UNIQUE INDEX "items_name_key" ON "public"."items"("name");
+
+-- CreateIndex
+CREATE INDEX "equipment_enhancements_itemId_idx" ON "public"."equipment_enhancements"("itemId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "equipment_enhancements_itemId_stepName_key" ON "public"."equipment_enhancements"("itemId", "stepName");
 
 -- CreateIndex
 CREATE INDEX "items_recipes_resultId_idx" ON "public"."items_recipes"("resultId");
@@ -533,14 +541,14 @@ CREATE INDEX "recipes_resultId_idx" ON "public"."recipes"("resultId");
 -- CreateIndex
 CREATE UNIQUE INDEX "recipes_resultId_materialId_key" ON "public"."recipes"("resultId", "materialId");
 
--- CreateIndex
-CREATE INDEX "_ItemToSlot_B_index" ON "public"."_ItemToSlot"("B");
+-- AddForeignKey
+ALTER TABLE "public"."items" ADD CONSTRAINT "items_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "public"."categories"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."items" ADD CONSTRAINT "items_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "public"."categories"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "public"."items" ADD CONSTRAINT "items_slotId_fkey" FOREIGN KEY ("slotId") REFERENCES "public"."slots"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "public"."items" ADD CONSTRAINT "items_tierId_fkey" FOREIGN KEY ("tierId") REFERENCES "public"."tiers"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
+ALTER TABLE "public"."items" ADD CONSTRAINT "items_tierId_fkey" FOREIGN KEY ("tierId") REFERENCES "public"."tiers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "public"."equipment_enhancements" ADD CONSTRAINT "equipment_enhancements_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "public"."items"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
@@ -688,10 +696,4 @@ ALTER TABLE "public"."items_sets_list" ADD CONSTRAINT "items_sets_list_itemSetLi
 
 -- AddForeignKey
 ALTER TABLE "public"."items_sets_list" ADD CONSTRAINT "items_sets_list_setId_fkey" FOREIGN KEY ("setId") REFERENCES "public"."item_sets"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."_ItemToSlot" ADD CONSTRAINT "_ItemToSlot_A_fkey" FOREIGN KEY ("A") REFERENCES "public"."items"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "public"."_ItemToSlot" ADD CONSTRAINT "_ItemToSlot_B_fkey" FOREIGN KEY ("B") REFERENCES "public"."slots"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 

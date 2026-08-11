@@ -9,24 +9,21 @@ datasource db {
 }
 
 model Item {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  description String?
-  categoryId  Int
-  tierId      Int
-  image       String?
-  slotId      Int?
-
-  slot Slot? @relation(fields: [slotId], references: [id])
-
-  category Category @relation(fields: [categoryId], references: [id])
-  tier     ItemTier @relation(fields: [tierId], references: [id])
-
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+  description     String?
+  categoryId      Int
+  tierId          Int
+  image           String?
+  slotId          Int?
   enchantDrop     EnchantDrop[]
   equipmentStep   EquipmentStep[]
   grindIngredient GrindIngredient[]
   itemDrop        ItemDrop[]
   itemGrind       ItemGrind[]
+  category        Category          @relation(fields: [categoryId], references: [id])
+  slot            Slot?             @relation(fields: [slotId], references: [id])
+  tier            ItemTier          @relation(fields: [tierId], references: [id])
   itemSetList     ItemSetList[]
 
   @@map("items")
@@ -196,8 +193,8 @@ model Slot {
   value           String            @unique
   enchantSlot     EnchantSlot[]
   grindSlot       GrindSlot[]
-  itemSetSlotList ItemSetSlotList[]
   item            Item[]
+  itemSetSlotList ItemSetSlotList[]
 
   @@map("slots")
 }
@@ -314,7 +311,10 @@ model BasicClearReward {
 model Character {
   id             Int              @id @default(autoincrement())
   name           String           @unique
-  image          String
+  image          String?
+  battleType     BattleType?
+  gender         Gender?
+  releaseDate    DateTime?        @db.Date
   characterSkill CharacterSkill[]
 
   @@map("characters")
@@ -324,7 +324,7 @@ model Skill {
   id             Int              @id @default(autoincrement())
   name           String           @unique
   description    String
-  image          String
+  image          String?
   characterSkill CharacterSkill[]
 
   @@map("skills")
@@ -338,6 +338,7 @@ model CharacterSkill {
   skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
 
   @@map("characters_skills")
+  @@unique([characterId, skillId])
 }
 
 model User {
@@ -508,4 +509,14 @@ enum AffixType {
   SUFFIX
   INFUSION
   PARTHOLN
+}
+
+enum BattleType {
+  melee
+  ranged
+}
+
+enum Gender {
+  male
+  female
 }
