@@ -35,17 +35,26 @@ export class CharactersService {
     return CharacterMapper.toSkillResponse(charater);
   }
 
-  async countGender() {
-    const count = await this.characterRepository.countGender();
-    if (!count) throw new NotFoundException(`카운트 정보가 없습니다.`);
-    return count;
-  }
-
+  /**
+   * 통계
+   *
+   * @returns 1. 성별
+   *
+   */
   async findStatistics() {
     const [characters, count] = await Promise.all([
       this.findAllCharacter(),
       this.countGender(),
     ]);
-    return { characters, count };
+
+    const year = CharacterMapper.toYear(characters);
+    const genderCount = CharacterMapper.toGenderCount(count);
+    return { year, genderCount };
+  }
+
+  async countGender() {
+    const count = await this.characterRepository.countGender();
+    if (!count) throw new NotFoundException(`카운트 정보가 없습니다.`);
+    return count;
   }
 }

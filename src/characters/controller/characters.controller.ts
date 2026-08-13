@@ -17,14 +17,16 @@ export class CharactersController {
     return await this.charactersService.getCharacterImage();
   }
 
+  @Get('statistics')
+  async findStatistics() {
+    return await this.charactersService.findStatistics();
+  }
+
   // 해당 직업의 기본 정보와 스킬
   @Get(':classId')
   async findOneDetailClass(@Param('classId', ParseIntPipe) classId: number) {
     return await this.charactersService.findOneDetailClass(classId);
   }
 
-  @Get('statistics')
-  async findStatistics() {
-    return await this.charactersService.findStatistics();
-  }
+  // 넥슨 랭커에 해당 직업이 몇명씩 존재하는지
 }

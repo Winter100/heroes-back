@@ -1,6 +1,6 @@
+import { StepsDto, UpdateItemDto } from './../dto/item-update.dto';
 import { Prisma } from '@prisma/client';
 import { CreateItemDto } from '../dto/item-create.dto';
-import { UpdateItemDto } from '../dto/item-update.dto';
 import { PrismaService } from './../../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
 
@@ -8,60 +8,127 @@ import { Injectable } from '@nestjs/common';
 export class ItemRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(createItemDto: CreateItemDto, image: string) {
-    return await this.prismaService.item.create({
-      data: {
-        name: createItemDto.name,
-        description: createItemDto.description,
-        image,
-        category: {
-          connect: {
-            name: createItemDto.category,
-          },
+  async create(createItemDto: CreateItemDto, image?: string) {
+    const { categoryId, tierId } = createItemDto;
+    // 트랜잭션으로 하고 private로 해야할 작업 분리해서 가져와서 사용하기
+    /**
+     * - 모든 장비 모두 생성 후 스탭까지만 만들기
+     * - 장비 스텟
+     * - 레시피
+     *
+     * 1. 아이템테이블에 아이템 생성
+     * 2. tx.equipmentStep.create({data:{itemId:생성아이디,stepName:0}})
+     *
+     */
+    return await this.prismaService.$transaction(async (tx) => {
+      const createdItem = await tx.item.create({
+        data: {
+          name: createItemDto.name,
+          description: createItemDto.description,
+          image,
+          categoryId,
+          tierId,
         },
-        tier: {
-          connect: {
-            name: createItemDto.tier,
-          },
+      });
+
+      await tx.equipmentStep.create({
+        data: {
+          itemId: createdItem.id,
+          stepName: '0',
         },
-      },
+      });
+
+      return createdItem;
     });
   }
 
-  async update(updateItemDto: UpdateItemDto, image: string) {
-    return await this.prismaService.item.update({
-      where: {
-        name: updateItemDto.name,
-      },
-      data: {
-        name: updateItemDto.name,
-        description: updateItemDto.description
-          ? updateItemDto.description
-          : undefined,
-        image: image ? image : undefined,
-        category: updateItemDto.category
-          ? {
-              connect: {
-                name: updateItemDto.category,
-              },
-            }
-          : undefined,
+  async update(id: number, updateItemDto: UpdateItemDto, image?: string) {
+    return await this.prismaService.$transaction(async (tx) => {
+      const updateItem = await tx.item.update({
+        where: {
+          id,
+        },
+        data: {
+          name: updateItemDto.name,
+          description: updateItemDto.description,
+          categoryId: updateItemDto.categoryId,
+          tierId: updateItemDto.tierId,
+          image,
+        },
+      });
 
-        tier: updateItemDto.tier
-          ? {
-              connect: {
-                name: updateItemDto.tier,
-              },
-            }
-          : undefined,
-      },
+      // 장비 카테고리: 1
+      if (updateItem.categoryId === 1) {
+        const steps = updateItemDto.steps ?? [];
+        const stepsDataToInsert = steps.map((step) => ({
+          itemId: id,
+          stepName: step.stepName,
+        }));
+        await tx.equipmentStep.createMany({
+          data: stepsDataToInsert,
+          skipDuplicates: true,
+        });
+        await this.createItemStatsByStep(tx, steps, id);
+      }
+
+      return updateItem;
     });
   }
 
-  async findItem(name: string) {
-    return await this.prismaService.item.findFirst({
+  async delete(id: number) {
+    await this.prismaService.item.delete({ where: { id } });
+  }
+
+  private async createItemStatsByStep(
+    tx: Prisma.TransactionClient,
+    steps: StepsDto[],
+    itemId: number,
+  ) {
+    for (const step of steps) {
+      const equipmentStep = await tx.equipmentStep.findUnique({
+        where: {
+          itemId_stepName: {
+            itemId,
+            stepName: step.stepName,
+          },
+        },
+      });
+
+      if (!equipmentStep) {
+        throw new Error(
+          `해당 아이템(${itemId})의 강화 단계(${step.stepName})를 찾을 수 없습니다.`,
+        );
+      }
+
+      if (!step.effects || step.effects.length === 0) return;
+      const statsDataToInsert = step.effects.map((effect) => ({
+        statId: effect.stat_id,
+        value: effect.stat_value,
+        equipmentStepId: equipmentStep.id,
+      }));
+
+      await tx.itemStats.createMany({
+        data: statsDataToInsert,
+        skipDuplicates: true,
+      });
+    }
+  }
+
+  async findItemByName(itemName: string) {
+    return await this.prismaService.item.findUnique({
       where: {
-        name,
+        name: itemName,
+      },
+      include: {
+        category: true,
+        tier: true,
+      },
+    });
+  }
+  async findItemById(id: number) {
+    return await this.prismaService.item.findUnique({
+      where: {
+        id,
       },
       include: {
         category: true,

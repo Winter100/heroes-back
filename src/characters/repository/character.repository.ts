@@ -274,6 +274,11 @@ const selectDetailCharacter = Prisma.validator<Prisma.CharacterSelect>()({
   image: true,
   gender: true,
   releaseDate: true,
+  _count: {
+    select: {
+      characterSkill: true,
+    },
+  },
   characterSkill: {
     select: {
       skill: {
