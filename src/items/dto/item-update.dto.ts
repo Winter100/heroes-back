@@ -25,6 +25,12 @@ export class UpdateItemDto extends PartialType(CreateItemDto) {
 }
 
 export class StepsDto {
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Type(() => Number)
+  stepId?: number;
+
   @Trim()
   @IsString()
   @IsNotEmpty()

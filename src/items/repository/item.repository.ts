@@ -44,31 +44,30 @@ export class ItemRepository {
 
   async update(id: number, updateItemDto: UpdateItemDto, image?: string) {
     return await this.prismaService.$transaction(async (tx) => {
-      const updateItem = await tx.item.update({
-        where: {
-          id,
-        },
-        data: {
-          name: updateItemDto.name,
-          description: updateItemDto.description,
-          categoryId: updateItemDto.categoryId,
-          tierId: updateItemDto.tierId,
-          image,
-        },
-      });
+      const updateItem = await this.updateBaseItem(
+        tx,
+        id,
+        updateItemDto,
+        image,
+      );
 
-      // 장비 카테고리: 1
       if (updateItem.categoryId === 1) {
         const steps = updateItemDto.steps ?? [];
-        const stepsDataToInsert = steps.map((step) => ({
-          itemId: id,
-          stepName: step.stepName,
-        }));
-        await tx.equipmentStep.createMany({
-          data: stepsDataToInsert,
-          skipDuplicates: true,
-        });
-        await this.createItemStatsByStep(tx, steps, id);
+
+        for (const step of steps) {
+          if (step.stepId) {
+            const updatedStep = await tx.equipmentStep.update({
+              where: { id: step.stepId },
+              data: { stepName: step.stepName },
+            });
+            await this.updateItemStatsByStep(tx, step, updatedStep.id);
+          } else {
+            const cratedStep = await tx.equipmentStep.create({
+              data: { itemId: id, stepName: step.stepName },
+            });
+            await this.createItemStatsByStep(tx, step, cratedStep.id);
+          }
+        }
       }
 
       return updateItem;
@@ -79,39 +78,72 @@ export class ItemRepository {
     await this.prismaService.item.delete({ where: { id } });
   }
 
+  private async updateBaseItem(
+    tx: Prisma.TransactionClient,
+    id: number,
+    updateItemDto: UpdateItemDto,
+    image?: string,
+  ) {
+    return await tx.item.update({
+      where: {
+        id,
+      },
+      data: {
+        name: updateItemDto.name,
+        description: updateItemDto.description,
+        categoryId: updateItemDto.categoryId,
+        tierId: updateItemDto.tierId,
+        image,
+      },
+    });
+  }
+
   private async createItemStatsByStep(
     tx: Prisma.TransactionClient,
-    steps: StepsDto[],
-    itemId: number,
+    step: StepsDto,
+    equipmentStepId: number,
   ) {
-    for (const step of steps) {
-      const equipmentStep = await tx.equipmentStep.findUnique({
-        where: {
-          itemId_stepName: {
-            itemId,
-            stepName: step.stepName,
-          },
-        },
-      });
-
-      if (!equipmentStep) {
-        throw new Error(
-          `해당 아이템(${itemId})의 강화 단계(${step.stepName})를 찾을 수 없습니다.`,
-        );
-      }
-
-      if (!step.effects || step.effects.length === 0) return;
-      const statsDataToInsert = step.effects.map((effect) => ({
-        statId: effect.stat_id,
-        value: effect.stat_value,
-        equipmentStepId: equipmentStep.id,
-      }));
-
-      await tx.itemStats.createMany({
-        data: statsDataToInsert,
-        skipDuplicates: true,
-      });
+    if (!equipmentStepId) {
+      throw new Error(
+        `stepId: (${equipmentStepId})의 강화 단계(${step.stepName})를 찾을 수 없습니다.`,
+      );
     }
+
+    if (!step.effects || step.effects.length === 0) return;
+    const statsDataToInsert = step.effects.map((effect) => ({
+      statId: effect.stat_id,
+      value: effect.stat_value,
+      equipmentStepId,
+    }));
+
+    await tx.itemStats.createMany({
+      data: statsDataToInsert,
+      skipDuplicates: true,
+    });
+  }
+
+  private async updateItemStatsByStep(
+    tx: Prisma.TransactionClient,
+    step: StepsDto,
+    equipmentStepId: number,
+  ) {
+    if (!equipmentStepId) {
+      throw new Error(
+        `stepId: (${equipmentStepId})의 강화 단계(${step.stepName})를 찾을 수 없습니다.`,
+      );
+    }
+
+    if (!step.effects || step.effects.length === 0) return;
+    const statsDataToInsert = step.effects.map((effect) => ({
+      statId: effect.stat_id,
+      value: effect.stat_value,
+      equipmentStepId,
+    }));
+
+    await tx.itemStats.updateMany({
+      where: { equipmentStepId },
+      data: statsDataToInsert,
+    });
   }
 
   async findItemByName(itemName: string) {

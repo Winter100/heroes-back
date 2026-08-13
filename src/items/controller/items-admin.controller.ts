@@ -50,4 +50,15 @@ export class ItemAdminController {
   ) {
     return await this.itemAdminService.deleteItem(itemId);
   }
+
+  /**
+   * 1. 레시피 CRUD
+   * - 프론트에서 레시피 추가 누르면 모든 장비 불러와서 거기서 아이템 ID와 수량
+   *   체크해서보내주기
+   *
+   * 2. 장비 세트 옵션 CRUD
+   * - 프론트에서 세트 옵션 추가 누르면 레벨과 세트 추가, 수정 가능하게 하기
+   *
+   * 3. 연마 CRUD
+   */
 }
