@@ -26,6 +26,7 @@ import { CharactersAdminService } from '../service/characters-adminservice';
 import { UpdateClassDto } from '../dto/character-class-update.dto';
 import { UpdateSkillDto } from '../dto/update-skill.dto';
 import { DisconnectClassSkill } from '../dto/disconnect-class-skill.dto';
+import { IntParam } from 'src/common/decorators/int.param';
 
 /**
  * 관리자 전용 컨트롤러
@@ -61,15 +62,7 @@ export class CharactersAdminController {
   @Post('update/:classId')
   async updateClassProfile(
     @Body() updateClassDto: UpdateClassDto,
-    @Param(
-      'classId',
-      new ParseIntPipe({
-        exceptionFactory: () => {
-          new BadRequestException('올바른 직업 ID를 입력해주세요');
-        },
-      }),
-    )
-    classId: number,
+    @IntParam('classId', '올바른 직업 ID를 입력해주세요') classId: number,
     @UploadedFile(ImageValidationPipe) image?: Express.Multer.File,
   ) {
     return await this.charactersAdminService.updateClassProfile(
@@ -82,15 +75,7 @@ export class CharactersAdminController {
   /* 직업 삭제 */
   @Delete(':classId')
   async deleteClassProfile(
-    @Param(
-      'classId',
-      new ParseIntPipe({
-        exceptionFactory: () => {
-          new BadRequestException('올바른 직업 ID를 입력해주세요');
-        },
-      }),
-    )
-    classId: number,
+    @IntParam('classId', '올바른 직업 ID를 입력해주세요') classId: number,
   ) {
     return await this.charactersAdminService.deleteClassProfile(classId);
   }
@@ -114,14 +99,7 @@ export class CharactersAdminController {
   @Post(`skill/update/:skillId`)
   async updateClassSkill(
     @Body() updateSkillDto: UpdateSkillDto,
-    @Param(
-      'skillId',
-      new ParseIntPipe({
-        exceptionFactory: () =>
-          new BadRequestException('올바른 스킬 ID를 입력해주세요'),
-      }),
-    )
-    skillId: number,
+    @IntParam('skillId', '올바른 스킬 ID를 입력해주세요') skillId: number,
     @UploadedFile(ImageValidationPipe) image?: Express.Multer.File,
   ) {
     return await this.charactersAdminService.updateClassSkill(
@@ -135,14 +113,7 @@ export class CharactersAdminController {
   @Delete('skill/delete/:skillId')
   async disconnectClassSkill(
     @Body() disconnectClassSkill: DisconnectClassSkill,
-    @Param(
-      'skillId',
-      new ParseIntPipe({
-        exceptionFactory: () =>
-          new BadRequestException('올바른 스킬 ID를 입력해주세요'),
-      }),
-    )
-    skillId: number,
+    @IntParam('skillId', '올바른 스킬 ID를 입력해주세요') skillId: number,
   ) {
     return await this.charactersAdminService.deleteClassSkill(
       disconnectClassSkill,
