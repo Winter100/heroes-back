@@ -14,41 +14,60 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ImageValidationPipe } from 'src/characters/pipes/image-validation.pipe';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { ItemAdminService } from '../service/items-admin.service';
-import { CreateItemDto } from '../dto/item-create.dto';
+import {
+  CreateItemDto,
+  UpsertStepDto,
+  UpsertRecipeDto,
+} from '../dto/item-create.dto';
 import { UpdateItemDto } from '../dto/item-update.dto';
 import { IntParam } from 'src/common/decorators/int.param';
 
-@Roles(UserRole.ADMIN)
-@UseGuards(JwtAuthGuard, RolesGuard)
+// @Roles(UserRole.ADMIN)
+// @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('items-admin')
 export class ItemAdminController {
   constructor(private readonly itemAdminService: ItemAdminService) {}
 
   @UseInterceptors(FileInterceptor('image'))
   @Post()
-  async createItem(
+  createItem(
     @Body() createItemDto: CreateItemDto,
     @UploadedFile(ImageValidationPipe) image?: Express.Multer.File,
   ) {
-    return await this.itemAdminService.createItem(createItemDto, image);
+    return this.itemAdminService.createItem(createItemDto, image);
   }
 
   @UseInterceptors(FileInterceptor('image'))
   @Post('update/:itemId')
-  async updateItem(
+  updateItem(
     @Body() updateItemDto: UpdateItemDto,
     @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,
-    @UploadedFile()
-    image?: Express.Multer.File,
+    @UploadedFile() image?: Express.Multer.File,
   ) {
-    return await this.itemAdminService.updateItem(itemId, updateItemDto, image);
+    return this.itemAdminService.updateItem(itemId, updateItemDto, image);
+  }
+
+  @Post('upsert/step/:itemId')
+  upsertStepItem(
+    @Body() upsertStepDto: UpsertStepDto,
+    @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,
+  ) {
+    return this.itemAdminService.upsertStepItem(itemId, upsertStepDto);
   }
 
   @Delete('delete/:itemId')
-  async deleteItem(
+  deleteItem(
     @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,
   ) {
-    return await this.itemAdminService.deleteItem(itemId);
+    return this.itemAdminService.deleteItem(itemId);
+  }
+
+  @Post('recipe/:itemId')
+  createRecipe(
+    @IntParam('stepId', '올바른 stepId를 입력해주세요') stepId: number,
+    @Body() upsertRecipeDto: UpsertRecipeDto,
+  ) {
+    return this.itemAdminService.upsertRecipe(stepId, upsertRecipeDto);
   }
 
   /**

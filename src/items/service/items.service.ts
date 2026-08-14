@@ -26,6 +26,43 @@ export class ItemService {
       excludeExtraneousValues: true,
     });
   }
+
+  async findStepByStepId(stepId: number) {
+    const item = await this.itemRepository.findStepByStepId(stepId);
+
+    if (!item)
+      throw new NotFoundException(
+        `${stepId}에 해당하는 스탭을 찾지 못했습니다`,
+      );
+
+    return plainToInstance(ItemResponseDto, item, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  async findStepByItemId(itemId: number) {
+    const item = await this.itemRepository.findStepByItemId(itemId);
+
+    if (!item)
+      throw new NotFoundException(
+        `${itemId}에 해당하는 스탭을 찾지 못했습니다`,
+      );
+
+    return item;
+  }
+
+  async findAllItems() {
+    const items = await this.itemRepository.findAllItems();
+    if (!items) throw new NotFoundException('아이템이 없습니다.');
+    return items;
+  }
+
+  async findAllSteps() {
+    const items = await this.itemRepository.findAllSteps();
+    if (!items) throw new NotFoundException('아이템이 없습니다.');
+    return items;
+  }
+
   async findItemByName(itemName: string) {
     const item = await this.itemRepository.findItemByName(itemName);
 

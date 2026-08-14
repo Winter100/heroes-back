@@ -1,33 +1,42 @@
-import { StepsDto, UpdateItemDto } from './../dto/item-update.dto';
+import {
+  StepsDto,
+  UpsertRecipeDto,
+  UpsertStepDto,
+} from './../dto/item-create.dto';
+import { UpdateItemDto } from './../dto/item-update.dto';
 import { Prisma } from '@prisma/client';
 import { CreateItemDto } from '../dto/item-create.dto';
 import { PrismaService } from './../../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
+import { ItemResponseDto } from '../dto/item-response.dto';
 
 @Injectable()
 export class ItemRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
+  async findAllItems() {
+    return await this.prismaService.item.findMany({
+      select: itemAllselect,
+      orderBy: [
+        { category: { id: 'asc' } },
+        { name: 'asc' },
+        { tier: { id: 'asc' } },
+      ],
+    });
+  }
+
+  async findAllSteps() {
+    return await this.prismaService.item.findMany({
+      select: itemAllStepSelect,
+    });
+  }
+
   async create(createItemDto: CreateItemDto, image?: string) {
-    const { categoryId, tierId } = createItemDto;
-    // 트랜잭션으로 하고 private로 해야할 작업 분리해서 가져와서 사용하기
-    /**
-     * - 모든 장비 모두 생성 후 스탭까지만 만들기
-     * - 장비 스텟
-     * - 레시피
-     *
-     * 1. 아이템테이블에 아이템 생성
-     * 2. tx.equipmentStep.create({data:{itemId:생성아이디,stepName:0}})
-     *
-     */
     return await this.prismaService.$transaction(async (tx) => {
       const createdItem = await tx.item.create({
         data: {
-          name: createItemDto.name,
-          description: createItemDto.description,
+          ...createItemDto,
           image,
-          categoryId,
-          tierId,
         },
       });
 
@@ -42,60 +51,46 @@ export class ItemRepository {
     });
   }
 
-  async update(id: number, updateItemDto: UpdateItemDto, image?: string) {
-    return await this.prismaService.$transaction(async (tx) => {
-      const updateItem = await this.updateBaseItem(
-        tx,
-        id,
-        updateItemDto,
-        image,
-      );
+  upsertRecipe(stepId: number, createRecipeDto: UpsertRecipeDto) {
+    const deleteMany = this.prismaService.itemRecipe.deleteMany({
+      where: { resultId: stepId },
+    });
+    const createMany = this.prismaService.itemRecipe.createMany({
+      data: createRecipeDto.recipes.map((recipe) => ({
+        resultId: stepId,
+        materialId: recipe.stepId,
+        quantity: recipe.quantity,
+      })),
+    });
+    return this.prismaService.$transaction([deleteMany, createMany]);
+  }
 
-      if (updateItem.categoryId === 1) {
-        const steps = updateItemDto.steps ?? [];
+  async update(id: number, updateItemDto: UpdateItemDto, image?: string) {
+    return await this.prismaService.item.update({
+      where: { id },
+      data: { ...updateItemDto, image },
+    });
+  }
+
+  async upsertStep(item: ItemResponseDto, upsertStepDto: UpsertStepDto) {
+    return await this.prismaService.$transaction(async (tx) => {
+      if (item.categoryId === 1) {
+        const steps = upsertStepDto.steps ?? [];
+
+        await tx.equipmentStep.deleteMany({ where: { itemId: item.id } });
 
         for (const step of steps) {
-          if (step.stepId) {
-            const updatedStep = await tx.equipmentStep.update({
-              where: { id: step.stepId },
-              data: { stepName: step.stepName },
-            });
-            await this.updateItemStatsByStep(tx, step, updatedStep.id);
-          } else {
-            const cratedStep = await tx.equipmentStep.create({
-              data: { itemId: id, stepName: step.stepName },
-            });
-            await this.createItemStatsByStep(tx, step, cratedStep.id);
-          }
+          const cratedStep = await tx.equipmentStep.create({
+            data: { itemId: item.id, stepName: step.stepName },
+          });
+          await this.createItemStatsByStep(tx, step, cratedStep.id);
         }
       }
-
-      return updateItem;
     });
   }
 
   async delete(id: number) {
     await this.prismaService.item.delete({ where: { id } });
-  }
-
-  private async updateBaseItem(
-    tx: Prisma.TransactionClient,
-    id: number,
-    updateItemDto: UpdateItemDto,
-    image?: string,
-  ) {
-    return await tx.item.update({
-      where: {
-        id,
-      },
-      data: {
-        name: updateItemDto.name,
-        description: updateItemDto.description,
-        categoryId: updateItemDto.categoryId,
-        tierId: updateItemDto.tierId,
-        image,
-      },
-    });
   }
 
   private async createItemStatsByStep(
@@ -168,6 +163,31 @@ export class ItemRepository {
       },
     });
   }
+  async findStepByStepId(id: number) {
+    return await this.prismaService.equipmentStep.findUnique({
+      where: {
+        id,
+      },
+    });
+  }
+
+  async findStepByItemId(id: number) {
+    return await this.prismaService.item.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        description: true,
+        slot: true,
+        category: true,
+        tier: true,
+        equipmentStep: true,
+      },
+    });
+  }
 
   async findCategoryId(category?: string) {
     return await this.prismaService.category.findFirst({
@@ -224,6 +244,33 @@ export class ItemRepository {
     });
   }
 }
+
+const itemAllselect = Prisma.validator<Prisma.ItemSelect>()({
+  id: true,
+  name: true,
+  image: true,
+  category: true,
+  tier: true,
+});
+
+export type ItemWithRelations = Prisma.ItemGetPayload<{
+  select: typeof itemAllselect;
+}>;
+
+const itemAllStepSelect = Prisma.validator<Prisma.ItemSelect>()({
+  id: true,
+  name: true,
+  equipmentStep: {
+    select: {
+      id: true,
+      stepName: true,
+    },
+  },
+});
+
+export type ItemWithStepRelations = Prisma.ItemGetPayload<{
+  select: typeof itemAllStepSelect;
+}>;
 
 export const grindWithRelationsSelect = Prisma.validator<Prisma.GrindSelect>()({
   id: true,

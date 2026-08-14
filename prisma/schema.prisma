@@ -33,7 +33,7 @@ model EquipmentStep {
   id                Int          @id @default(autoincrement())
   itemId            Int
   stepName          String
-  item              Item         @relation(fields: [itemId], references: [id])
+  item              Item         @relation(fields: [itemId], references: [id], onDelete:Cascade)
   recipesAsMaterial ItemRecipe[] @relation("MaterialStep")
   recipesAsResult   ItemRecipe[] @relation("ResultStep")
   stats             ItemStats[]

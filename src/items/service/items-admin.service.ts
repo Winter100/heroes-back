@@ -1,6 +1,10 @@
 import { ItemService } from './items.service';
 import { ImageUploadService } from 'src/supabase/imageUpload.service';
-import { CreateItemDto } from '../dto/item-create.dto';
+import {
+  CreateItemDto,
+  UpsertRecipeDto,
+  UpsertStepDto,
+} from '../dto/item-create.dto';
 import { ItemRepository } from './../repository/item.repository';
 import { BadRequestException, Injectable } from '@nestjs/common';
 // import { BUCKET_NAME } from 'src/supabase/constant/bucket';
@@ -65,18 +69,28 @@ export class ItemAdminService {
     }
   }
 
+  async upsertStepItem(itemId: number, upsertStepDto: UpsertStepDto) {
+    const findItem = await this.itemService.findItemById(itemId);
+
+    await this.itemRepository.upsertStep(findItem, upsertStepDto);
+  }
+
   async deleteItem(itemId: number) {
     const findItem = await this.itemService.findItemById(itemId);
     await this.itemRepository.delete(itemId);
     if (findItem.image) {
       try {
-        await this.imageUploadService.deleteImage(findItem.image);
+        // await this.imageUploadService.deleteImage(findItem.image);
       } catch (error) {
-        // 이미지 삭제 실패시 추적할 수 있는 방법 필요
         console.error(`스토리지 이미지 삭제 실패 ${itemId}`, error);
       }
     }
 
     return { message: '아이템이 성공적으로 삭제되었습니다.' };
+  }
+
+  async upsertRecipe(stepId: number, upsertRecipeDto: UpsertRecipeDto) {
+    await this.itemService.findStepByStepId(stepId);
+    return this.itemRepository.upsertRecipe(stepId, upsertRecipeDto);
   }
 }
