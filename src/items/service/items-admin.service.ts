@@ -6,9 +6,14 @@ import {
   UpsertStepDto,
 } from '../dto/item-create.dto';
 import { ItemRepository } from './../repository/item.repository';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+} from '@nestjs/common';
 // import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { UpdateItemDto } from '../dto/item-update.dto';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ItemAdminService {
@@ -28,8 +33,13 @@ export class ItemAdminService {
       const item = await this.itemRepository.create(createItemDto, imageUrl);
 
       return { message: `${item.name}을 등록했습니다.` };
-    } catch {
-      // await this.imageUploadService.deleteImage(imageUrl);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('이미 존재하는 이름입니다.');
+      }
       throw new BadRequestException();
     }
   }
@@ -61,18 +71,61 @@ export class ItemAdminService {
 
       return { message: `${updateItem.name}을 수정했습니다.` };
     } catch (error) {
-      console.error(error instanceof Error ? error.message : `알 수 없는 에러`);
       if (imageUrl) {
         await this.imageUploadService.deleteImage(imageUrl);
       }
-      throw new BadRequestException(`${findItem.name} 수정에 실패했습니다.`);
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('이미 존재하는 이름입니다.');
+      }
+      throw new BadRequestException();
     }
   }
 
-  async upsertStepItem(itemId: number, upsertStepDto: UpsertStepDto) {
+  async createStepItem(itemId: number, createStepDto: UpsertStepDto) {
     const findItem = await this.itemService.findItemById(itemId);
 
-    await this.itemRepository.upsertStep(findItem, upsertStepDto);
+    const findStepData = await this.itemRepository.findStepByItemIdAndStepName(
+      itemId,
+      createStepDto.steps?.stepName,
+    );
+
+    if (findStepData)
+      throw new BadRequestException('이미 존재하는 강화 단계입니다');
+
+    await this.itemRepository.createStep(findItem, createStepDto);
+
+    return { message: `${findItem.name} 아이템 강화 등록 성공` };
+  }
+
+  async updateStepItem(itemId: number, updateStepDto: UpsertStepDto) {
+    if (!updateStepDto.stepId)
+      throw new BadRequestException('강화 아이디가 필요합니다.');
+
+    // 자기 자신의 값만 바꿔도 여기에 걸려서 안됨.
+    const findStepData = await this.itemRepository.findStepByItemIdAndStepName(
+      itemId,
+      updateStepDto.steps.stepName,
+    );
+
+    if (findStepData && findStepData.id !== updateStepDto.stepId)
+      throw new BadRequestException('이미 존재하는 강화 단계입니다');
+
+    await this.itemRepository.updateStep(updateStepDto.stepId, updateStepDto);
+
+    return { message: `${updateStepDto.stepId} 아이템 강화 수정 성공` };
+  }
+
+  async deleteStepItem(stepId: number) {
+    await this.itemRepository.deleteStep(stepId);
+
+    return { message: `${stepId} 아이템 강화 삭제 성공` };
+  }
+
+  getStatsId() {
+    return this.itemRepository.getStatsId();
   }
 
   async deleteItem(itemId: number) {

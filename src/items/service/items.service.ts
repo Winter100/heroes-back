@@ -4,27 +4,29 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import { ItemRepository } from '../repository/item.repository';
+import {
+  ItemRepository,
+  ItemWithRelations,
+} from '../repository/item.repository';
 import { ItemResponseDto } from '../dto/item-response.dto';
 import { SearchItemDto } from '../dto/search-item.dto';
 import { GrindMapper } from '../mapper/grind-mapper';
 import { ItemSetOptionMapper } from '../mapper/item-set-option-mapper';
 import { sortRecipe } from '../utils/utils';
 import { ItemRecipeMapper } from '../mapper/item-recipe-mapper';
+import { ItemMapper } from '../mapper/items-mapper';
 
 @Injectable()
 export class ItemService {
   constructor(private readonly itemRepository: ItemRepository) {}
 
-  async findItemById(id: number) {
+  async findItemById(id: number): Promise<ItemWithRelations> {
     const item = await this.itemRepository.findItemById(id);
 
     if (!item)
       throw new NotFoundException(`${id}에 해당하는 아이템을 찾지 못했습니다.`);
 
-    return plainToInstance(ItemResponseDto, item, {
-      excludeExtraneousValues: true,
-    });
+    return ItemMapper.toItemDetail(item);
   }
 
   async findStepByStepId(stepId: number) {
@@ -48,7 +50,7 @@ export class ItemService {
         `${itemId}에 해당하는 스탭을 찾지 못했습니다`,
       );
 
-    return item;
+    return ItemMapper.toDetailStep(item);
   }
 
   async findAllItems() {

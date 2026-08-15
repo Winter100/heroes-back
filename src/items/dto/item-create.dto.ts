@@ -55,21 +55,16 @@ export class Material {
   quantity!: number;
 }
 
-export class UpsertStepDto {
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => StepsDto)
-  steps?: StepsDto[];
+export class Effects {
+  @IsInt()
+  @Min(1)
+  stat_id!: number;
+
+  @IsInt()
+  stat_value!: number;
 }
 
 export class StepsDto {
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Type(() => Number)
-  stepId?: number;
-
   @Trim()
   @IsString()
   @IsNotEmpty()
@@ -82,11 +77,13 @@ export class StepsDto {
   effects?: Effects[];
 }
 
-export class Effects {
+export class UpsertStepDto {
+  @IsOptional()
   @IsInt()
-  @Min(1)
-  stat_id!: number;
+  @Type(() => Number)
+  stepId?: number;
 
-  @IsInt()
-  stat_value!: number;
+  @ValidateNested()
+  @Type(() => StepsDto)
+  steps!: StepsDto;
 }

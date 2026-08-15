@@ -1,5 +1,5 @@
 import {
-  StepsDto,
+  Effects,
   UpsertRecipeDto,
   UpsertStepDto,
 } from './../dto/item-create.dto';
@@ -8,7 +8,6 @@ import { Prisma } from '@prisma/client';
 import { CreateItemDto } from '../dto/item-create.dto';
 import { PrismaService } from './../../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { ItemResponseDto } from '../dto/item-response.dto';
 
 @Injectable()
 export class ItemRepository {
@@ -28,6 +27,17 @@ export class ItemRepository {
   async findAllSteps() {
     return await this.prismaService.item.findMany({
       select: itemAllStepSelect,
+    });
+  }
+
+  findStepByItemIdAndStepName(itemId: number, stepName: string) {
+    return this.prismaService.equipmentStep.findUnique({
+      where: {
+        itemId_stepName: {
+          itemId,
+          stepName,
+        },
+      },
     });
   }
 
@@ -72,20 +82,43 @@ export class ItemRepository {
     });
   }
 
-  async upsertStep(item: ItemResponseDto, upsertStepDto: UpsertStepDto) {
+  async createStep(item: ItemWithRelations, upsertStepDto: UpsertStepDto) {
     return await this.prismaService.$transaction(async (tx) => {
-      if (item.categoryId === 1) {
-        const steps = upsertStepDto.steps ?? [];
-
-        await tx.equipmentStep.deleteMany({ where: { itemId: item.id } });
-
-        for (const step of steps) {
-          const cratedStep = await tx.equipmentStep.create({
-            data: { itemId: item.id, stepName: step.stepName },
-          });
-          await this.createItemStatsByStep(tx, step, cratedStep.id);
-        }
+      if (upsertStepDto.steps && item.category.id === 1) {
+        const effects = upsertStepDto.steps.effects ?? [];
+        const cratedStep = await tx.equipmentStep.create({
+          data: { itemId: item.id, stepName: upsertStepDto.steps.stepName },
+        });
+        await this.upsertItemStatsByStep(tx, effects, cratedStep.id);
       }
+    });
+  }
+
+  async updateStep(stepId: number, upsertStepDto: UpsertStepDto) {
+    return await this.prismaService.$transaction(async (tx) => {
+      if (upsertStepDto.steps) {
+        const effects = upsertStepDto.steps.effects ?? [];
+        const updatedStep = await tx.equipmentStep.update({
+          where: { id: stepId },
+          data: { stepName: upsertStepDto.steps.stepName },
+        });
+        await this.upsertItemStatsByStep(tx, effects, updatedStep.id);
+      }
+    });
+  }
+  async deleteStep(stepId: number) {
+    return await this.prismaService.equipmentStep.delete({
+      where: { id: stepId },
+    });
+  }
+
+  async getStatsId() {
+    return this.prismaService.stat.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+      orderBy: { id: 'asc' },
     });
   }
 
@@ -93,51 +126,27 @@ export class ItemRepository {
     await this.prismaService.item.delete({ where: { id } });
   }
 
-  private async createItemStatsByStep(
+  private async upsertItemStatsByStep(
     tx: Prisma.TransactionClient,
-    step: StepsDto,
+    effects: Effects[],
     equipmentStepId: number,
   ) {
     if (!equipmentStepId) {
-      throw new Error(
-        `stepId: (${equipmentStepId})의 강화 단계(${step.stepName})를 찾을 수 없습니다.`,
-      );
+      throw new Error(`stepId: (${equipmentStepId})를 찾을 수 없습니다.`);
     }
 
-    if (!step.effects || step.effects.length === 0) return;
-    const statsDataToInsert = step.effects.map((effect) => ({
+    if (!effects || effects.length === 0) return;
+    const statsDataToInsert = effects.map((effect) => ({
       statId: effect.stat_id,
       value: effect.stat_value,
       equipmentStepId,
     }));
+
+    await tx.itemStats.deleteMany({ where: { equipmentStepId } });
 
     await tx.itemStats.createMany({
       data: statsDataToInsert,
       skipDuplicates: true,
-    });
-  }
-
-  private async updateItemStatsByStep(
-    tx: Prisma.TransactionClient,
-    step: StepsDto,
-    equipmentStepId: number,
-  ) {
-    if (!equipmentStepId) {
-      throw new Error(
-        `stepId: (${equipmentStepId})의 강화 단계(${step.stepName})를 찾을 수 없습니다.`,
-      );
-    }
-
-    if (!step.effects || step.effects.length === 0) return;
-    const statsDataToInsert = step.effects.map((effect) => ({
-      statId: effect.stat_id,
-      value: effect.stat_value,
-      equipmentStepId,
-    }));
-
-    await tx.itemStats.updateMany({
-      where: { equipmentStepId },
-      data: statsDataToInsert,
     });
   }
 
@@ -146,10 +155,7 @@ export class ItemRepository {
       where: {
         name: itemName,
       },
-      include: {
-        category: true,
-        tier: true,
-      },
+      select: itemAllselect,
     });
   }
   async findItemById(id: number) {
@@ -157,10 +163,7 @@ export class ItemRepository {
       where: {
         id,
       },
-      include: {
-        category: true,
-        tier: true,
-      },
+      select: itemAllselect,
     });
   }
   async findStepByStepId(id: number) {
@@ -176,16 +179,7 @@ export class ItemRepository {
       where: {
         id,
       },
-      select: {
-        id: true,
-        name: true,
-        image: true,
-        description: true,
-        slot: true,
-        category: true,
-        tier: true,
-        equipmentStep: true,
-      },
+      select: itemStepSelect,
     });
   }
 
@@ -255,6 +249,39 @@ const itemAllselect = Prisma.validator<Prisma.ItemSelect>()({
 
 export type ItemWithRelations = Prisma.ItemGetPayload<{
   select: typeof itemAllselect;
+}>;
+
+const itemStepSelect = Prisma.validator<Prisma.ItemSelect>()({
+  id: true,
+  name: true,
+  image: true,
+  description: true,
+  slot: true,
+  category: true,
+  tier: true,
+  equipmentStep: {
+    select: {
+      id: true,
+      stepName: true,
+      stats: {
+        select: {
+          stat: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          value: true,
+        },
+        orderBy: { statId: 'asc' },
+      },
+    },
+  },
+});
+
+export type ItemStepWithRelations = Prisma.ItemGetPayload<{
+  select: typeof itemStepSelect;
 }>;
 
 const itemAllStepSelect = Prisma.validator<Prisma.ItemSelect>()({

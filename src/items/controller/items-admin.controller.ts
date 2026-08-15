@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   Post,
   UploadedFile,
   UseGuards,
@@ -37,6 +38,7 @@ export class ItemAdminController {
     return this.itemAdminService.createItem(createItemDto, image);
   }
 
+  // 아이템 기본 정보 수정
   @UseInterceptors(FileInterceptor('image'))
   @Post('update/:itemId')
   updateItem(
@@ -47,12 +49,33 @@ export class ItemAdminController {
     return this.itemAdminService.updateItem(itemId, updateItemDto, image);
   }
 
-  @Post('upsert/step/:itemId')
-  upsertStepItem(
+  // 아이템 강화 별 스텟 설정
+  @Post('create/step/:itemId')
+  createStepItem(
     @Body() upsertStepDto: UpsertStepDto,
     @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,
   ) {
-    return this.itemAdminService.upsertStepItem(itemId, upsertStepDto);
+    return this.itemAdminService.createStepItem(itemId, upsertStepDto);
+  }
+
+  @Post('update/step/:itemId')
+  updateStepItem(
+    @Body() upsertStepDto: UpsertStepDto,
+    @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,
+  ) {
+    return this.itemAdminService.updateStepItem(itemId, upsertStepDto);
+  }
+
+  @Delete('delete/step/:stepId')
+  deleteStepItem(
+    @IntParam('stepId', '올바른 stepId를 입력해주세요') stepId: number,
+  ) {
+    return this.itemAdminService.deleteStepItem(stepId);
+  }
+
+  @Get('stats')
+  getStatsId() {
+    return this.itemAdminService.getStatsId();
   }
 
   @Delete('delete/:itemId')
@@ -62,7 +85,7 @@ export class ItemAdminController {
     return this.itemAdminService.deleteItem(itemId);
   }
 
-  @Post('recipe/:itemId')
+  @Post('recipe/:stepId')
   createRecipe(
     @IntParam('stepId', '올바른 stepId를 입력해주세요') stepId: number,
     @Body() upsertRecipeDto: UpsertRecipeDto,
@@ -71,6 +94,8 @@ export class ItemAdminController {
   }
 
   /**
+   * --26.08.15 아이템 스탭 받아서 CRUD 처리하기
+   *
    * 1. 레시피 CRUD
    * - 프론트에서 레시피 추가 누르면 모든 장비 불러와서 거기서 아이템 ID와 수량
    *   체크해서보내주기
