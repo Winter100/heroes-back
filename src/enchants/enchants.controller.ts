@@ -15,7 +15,7 @@ import { EnchantDropCreateDto } from './dto/enchant-drop-create.dto';
 import { EnchantQueryDto } from './dto/enchant-query.dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
-@UseGuards(ThrottlerGuard)
+// @UseGuards(ThrottlerGuard)
 @UseInterceptors(ClassSerializerInterceptor)
 @SerializeOptions({ excludeExtraneousValues: true })
 @Controller('enchants')

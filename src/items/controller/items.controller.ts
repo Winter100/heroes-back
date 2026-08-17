@@ -1,11 +1,11 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 
-import { ThrottlerGuard } from '@nestjs/throttler';
+// import { ThrottlerGuard } from '@nestjs/throttler';
 import { SearchItemDto } from '../dto/search-item.dto';
 import { ItemService } from '../service/items.service';
 import { IntParam } from 'src/common/decorators/int.param';
 
-@UseGuards(ThrottlerGuard)
+// @UseGuards(ThrottlerGuard)
 @Controller('items')
 export class ItemController {
   constructor(private readonly itemService: ItemService) {}

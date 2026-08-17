@@ -1,17 +1,22 @@
 import { Type } from 'class-transformer';
-import { IsNumber, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
 export class RaidCreateDto {
-  @IsString()
-  raidName!: string;
+  @IsNotEmpty()
+  @IsNumber()
+  @Type(() => Number)
+  raidTitleId!: number;
 
   @IsString()
+  @IsNotEmpty()
   battle!: string;
 
   @IsString()
+  @IsNotEmpty()
   boss!: string;
 
-  @Type(() => Number)
+  @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number)
   level!: number;
 }

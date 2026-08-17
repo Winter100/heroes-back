@@ -3,7 +3,7 @@ import { PartholnService } from './partholn.service';
 import { PartholnType } from './constant/partholn';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
-@UseGuards(ThrottlerGuard)
+// @UseGuards(ThrottlerGuard)
 @Controller('partholn')
 export class PartholnController {
   constructor(private readonly partholnService: PartholnService) {}

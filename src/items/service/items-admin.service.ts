@@ -14,6 +14,7 @@ import {
 // import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { UpdateItemDto } from '../dto/item-update.dto';
 import { Prisma } from '@prisma/client';
+import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 
 @Injectable()
 export class ItemAdminService {
@@ -24,10 +25,9 @@ export class ItemAdminService {
   ) {}
 
   async createItem(createItemDto: CreateItemDto, image?: Express.Multer.File) {
-    // const imageUrl: string | undefined = image
-    //   ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.items)
-    //   : undefined;
-    const imageUrl = undefined;
+    const imageUrl: string | undefined = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.items)
+      : undefined;
 
     try {
       const item = await this.itemRepository.create(createItemDto, imageUrl);
@@ -51,10 +51,9 @@ export class ItemAdminService {
   ) {
     const findItem = await this.itemService.findItemById(itemId);
 
-    // const imageUrl: string | undefined = image
-    //   ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.items)
-    //   : undefined;
-    const imageUrl = undefined;
+    const imageUrl: string | undefined = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.items)
+      : undefined;
 
     try {
       const updateItem = await this.itemRepository.update(
@@ -62,7 +61,6 @@ export class ItemAdminService {
         updateItemDto,
         imageUrl,
       );
-
       if (imageUrl && findItem.image) {
         this.imageUploadService.deleteImage(findItem.image).catch((error) => {
           console.error(`기존 이미지 삭제 실패 (itemId: ${itemId}):`, error);
@@ -128,12 +126,22 @@ export class ItemAdminService {
     return this.itemRepository.getStatsId();
   }
 
+  async getBasicId() {
+    const [category, tier, slot] = await Promise.all([
+      this.itemRepository.getCategory(),
+      this.itemRepository.getTier(),
+      this.itemRepository.getSlots(),
+    ]);
+
+    return { category, tier, slot };
+  }
+
   async deleteItem(itemId: number) {
     const findItem = await this.itemService.findItemById(itemId);
     await this.itemRepository.delete(itemId);
     if (findItem.image) {
       try {
-        // await this.imageUploadService.deleteImage(findItem.image);
+        await this.imageUploadService.deleteImage(findItem.image);
       } catch (error) {
         console.error(`스토리지 이미지 삭제 실패 ${itemId}`, error);
       }

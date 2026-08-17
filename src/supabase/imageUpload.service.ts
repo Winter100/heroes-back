@@ -81,7 +81,7 @@ export class ImageUploadService {
       });
 
     if (error) {
-      console.log('error', error);
+      console.log('error', error instanceof Error ? error.message : error);
       throw new BadRequestException('업로드 실패');
     }
 

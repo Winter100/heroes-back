@@ -122,8 +122,26 @@ export class ItemRepository {
     });
   }
 
-  async delete(id: number) {
-    await this.prismaService.item.delete({ where: { id } });
+  getSlots() {
+    return this.prismaService.slot.findMany({
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  getCategory() {
+    return this.prismaService.category.findMany({
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  getTier() {
+    return this.prismaService.itemTier.findMany({
+      orderBy: { id: 'asc' },
+    });
+  }
+
+  delete(id: number) {
+    return this.prismaService.item.delete({ where: { id } });
   }
 
   private async upsertItemStatsByStep(

@@ -78,6 +78,11 @@ export class ItemAdminController {
     return this.itemAdminService.getStatsId();
   }
 
+  @Get('basic-id')
+  getBasicId() {
+    return this.itemAdminService.getBasicId();
+  }
+
   @Delete('delete/:itemId')
   deleteItem(
     @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,

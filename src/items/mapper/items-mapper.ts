@@ -15,6 +15,7 @@ export class ItemMapper {
       description: item.description,
       category: item.category,
       tier: item.tier,
+      slot: item.slot,
       steps: [...item.equipmentStep]
         .map((step) => ({
           id: step.id,

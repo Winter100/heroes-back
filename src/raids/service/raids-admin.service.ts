@@ -1,0 +1,107 @@
+import { RaidDetailUpsertDto } from './../dto/raid-detail-upsert.dto';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
+import { RaidRepository } from '../repository/raid.repository';
+import { ImageUploadService } from 'src/supabase/imageUpload.service';
+import { RaidCreateDto } from '../dto/raid-create.dto';
+import { BUCKET_NAME } from 'src/supabase/constant/bucket';
+import { UpdateRaidDto } from '../dto/raid-update.dto';
+import { RaidTitleCreateDto } from '../dto/raid-title-create.dto';
+import { RaidTitle } from '@prisma/client';
+
+@Injectable()
+export class RaidAdminService {
+  constructor(
+    private readonly raidRepository: RaidRepository,
+    private readonly imageUploadService: ImageUploadService,
+  ) {}
+
+  findAllRaidTitles() {
+    return this.raidRepository.findAllRaidTitles();
+  }
+
+  async createRaid(raidCreateDto: RaidCreateDto, image?: Express.Multer.File) {
+    const imageUrl = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.raidImages)
+      : undefined;
+
+    try {
+      return await this.raidRepository.createRaid(raidCreateDto, imageUrl);
+    } catch (e) {
+      if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
+      throw new InternalServerErrorException(e);
+    }
+  }
+
+  async updateRaid(
+    raidId: number,
+    updateRaidDto: UpdateRaidDto,
+    image?: Express.Multer.File,
+  ) {
+    const findRaid = await this.raidRepository.findRaidById(raidId);
+
+    if (!findRaid)
+      throw new NotFoundException(`${raidId}에 해당하는 레이드가 없습니다`);
+
+    const imageUrl = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.raidImages)
+      : undefined;
+
+    try {
+      const updateRaid = await this.raidRepository.updateRaid(
+        raidId,
+        updateRaidDto,
+        imageUrl,
+      );
+
+      if (findRaid.image && imageUrl)
+        await this.imageUploadService.deleteImage(findRaid.image);
+
+      return {
+        message: `${updateRaid.battle}을 수정했습니다.`,
+      };
+    } catch {
+      if (findRaid.image && imageUrl)
+        await this.imageUploadService.deleteImage(imageUrl);
+
+      throw new BadRequestException(
+        `${updateRaidDto.battle} 수정에 실패했습니다.`,
+      );
+    }
+  }
+
+  async deleteRaid(raidId: number) {
+    const findRaid = await this.raidRepository.findRaidById(raidId);
+    if (!findRaid)
+      throw new NotFoundException(`${raidId}에 해당하는 레이드가 없습니다`);
+    try {
+      await this.raidRepository.delete(raidId);
+      if (findRaid.image)
+        await this.imageUploadService.deleteImage(findRaid.image);
+      return { message: '삭제에 성공했습니다' };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
+  }
+
+  async raidDetailUpsert(
+    raidId: number,
+    RaidDetailUpsertDto: RaidDetailUpsertDto,
+  ) {
+    const findRaid = await this.raidRepository.findRaidById(raidId);
+    if (!findRaid)
+      throw new NotFoundException(`${raidId}에 해당하는 레이드가 없습니다`);
+
+    // 트랜잭션으로 진행하기
+  }
+
+  async createRaidTitle(
+    raidTitleCreateDto: RaidTitleCreateDto,
+  ): Promise<RaidTitle> {
+    return await this.raidRepository.createRaidTitle(raidTitleCreateDto.title);
+  }
+}

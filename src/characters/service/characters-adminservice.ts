@@ -38,13 +38,9 @@ export class CharactersAdminService {
 
     if (findClass) throw new BadRequestException('이미 존재하는 캐릭터 입니다');
 
-    let imageUrl: string | undefined = undefined;
-    if (image) {
-      imageUrl = await this.imageUploadService.uploadImage(
-        image,
-        BUCKET_NAME.characters,
-      );
-    }
+    const imageUrl: string | undefined = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.characters)
+      : undefined;
 
     const response = await this.characterRepository.createClassProfile(
       createClassDto,
@@ -75,20 +71,28 @@ export class CharactersAdminService {
     if (!findClass)
       throw new NotFoundException(`직업 아이디 ${classId}를 찾을 수 없습니다`);
 
-    let imageUrl: string | undefined = undefined;
+    const imageUrl: string | undefined = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.characters)
+      : undefined;
 
-    if (image) {
-      imageUrl = await this.imageUploadService.uploadImage(
-        image,
-        BUCKET_NAME.characters,
+    try {
+      const updateClass = await this.characterRepository.updateClassProfile(
+        updateClassDto,
+        classId,
+        imageUrl,
+      );
+
+      if (imageUrl && findClass.image) {
+        await this.imageUploadService.deleteImage(findClass.image);
+      }
+
+      return updateClass;
+    } catch (error) {
+      if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
+      throw new BadRequestException(
+        error instanceof Error ? error.message : error,
       );
     }
-
-    return await this.characterRepository.updateClassProfile(
-      updateClassDto,
-      classId,
-      imageUrl,
-    );
   }
 
   /**
@@ -117,13 +121,9 @@ export class CharactersAdminService {
         `${findSkill.name}이 이미 존재합니다. 수정을 이용하세요`,
       );
 
-    let imageUrl: string | undefined = undefined;
-    if (image) {
-      imageUrl = await this.imageUploadService.uploadImage(
-        image,
-        BUCKET_NAME.skills,
-      );
-    }
+    const imageUrl: string | undefined = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.skills)
+      : undefined;
 
     return await this.characterRepository.createSkillCombineClassId(
       createSkillDto,
@@ -146,19 +146,29 @@ export class CharactersAdminService {
     if (!skill)
       throw new NotFoundException(`skillId: ${skillId}가 존재하지 않습니다.`);
 
-    let imageUrl: string | undefined = undefined;
-    if (image) {
-      imageUrl = await this.imageUploadService.uploadImage(
-        image,
-        BUCKET_NAME.skills,
+    const imageUrl: string | undefined = image
+      ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.skills)
+      : undefined;
+
+    try {
+      const updateClassSkill =
+        await this.characterRepository.updateSkillCombineClassId(
+          updateSkillDto,
+          skillId,
+          imageUrl,
+        );
+
+      if (skill.image && imageUrl) {
+        await this.imageUploadService.deleteImage(skill.image);
+      }
+
+      return updateClassSkill;
+    } catch (error) {
+      if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
+      throw new BadRequestException(
+        error instanceof Error ? error.message : error,
       );
     }
-
-    return await this.characterRepository.updateSkillCombineClassId(
-      updateSkillDto,
-      skillId,
-      imageUrl,
-    );
   }
 
   /**
