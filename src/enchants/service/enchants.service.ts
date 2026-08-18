@@ -1,15 +1,15 @@
 import { NexonService } from 'src/nexon/nexon.service';
-import { Injectable } from '@nestjs/common';
-import { EnchantRepository } from './repository/enchant.respository';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { EnchantRepository } from '../repository/enchant.respository';
 import {
   EnchantDropResponseDto,
   EnchantResponseDto,
-} from './dto/enchant-response.dto';
-import { EnchantTransformer } from './enchant-transformer';
-import { EnchantDropCreateDto } from './dto/enchant-drop-create.dto';
+} from '../dto/enchant-response.dto';
+import { EnchantTransformer } from '../enchant-transformer';
+import { EnchantDropCreateDto } from '../dto/enchant-drop-create.dto';
 import { EnchantCategory } from '@prisma/client';
 import { EnchantMapper } from 'src/items/mapper/enchant-mapper';
-import { aggregateByEnchantPreset } from './util/enchant-util';
+import { aggregateByEnchantPreset } from '../util/enchant-util';
 
 @Injectable()
 export class EnchantService {
@@ -39,6 +39,12 @@ export class EnchantService {
         includeDrops: true,
       }),
     );
+  }
+
+  async findEnchantById(enchantId: number) {
+    const enchant = await this.enchantRepository.findEnchantById(enchantId);
+    if (!enchant) throw new NotFoundException('인챈트가 존재하지 않습니다');
+    return enchant;
   }
 
   async updateEnchant(enchantDropCreateDto: EnchantDropCreateDto) {

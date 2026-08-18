@@ -4,5 +4,5 @@ import { IsEnum, IsOptional } from 'class-validator';
 export class EnchantQueryDto {
   @IsOptional()
   @IsEnum(EnchantCategory)
-  category?: EnchantCategory;
+  category?: EnchantCategory = EnchantCategory.ENCHANT;
 }

@@ -1,19 +1,15 @@
 import {
-  Body,
   ClassSerializerInterceptor,
   Controller,
   Get,
-  Post,
   Query,
   SerializeOptions,
-  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { EnchantService } from './enchants.service';
-import { EnchantResponseDto } from './dto/enchant-response.dto';
-import { EnchantDropCreateDto } from './dto/enchant-drop-create.dto';
-import { EnchantQueryDto } from './dto/enchant-query.dto';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { EnchantResponseDto } from '../dto/enchant-response.dto';
+import { EnchantQueryDto } from '../dto/enchant-query.dto';
+import { EnchantService } from '../service/enchants.service';
+import { IntParam } from 'src/common/decorators/int.param';
 
 // @UseGuards(ThrottlerGuard)
 @UseInterceptors(ClassSerializerInterceptor)
@@ -21,11 +17,6 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 @Controller('enchants')
 export class EnchantsController {
   constructor(private readonly enchantService: EnchantService) {}
-
-  @Post('drop')
-  async createDropRaid(@Body() enchantDropCreateDto: EnchantDropCreateDto) {
-    return await this.enchantService.updateEnchant(enchantDropCreateDto);
-  }
 
   @Get()
   async findAll(
@@ -37,5 +28,13 @@ export class EnchantsController {
   @Get('price')
   async findPriceAll() {
     return await this.enchantService.findAllPrice();
+  }
+
+  @Get(':enchantId')
+  async findEnchantById(
+    @IntParam('enchantId', '올바른 ENCHANT ID를 입력해주세요.')
+    enchantId: number,
+  ) {
+    return await this.enchantService.findEnchantById(enchantId);
   }
 }

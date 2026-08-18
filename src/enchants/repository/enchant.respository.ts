@@ -7,10 +7,48 @@ import { PrismaService } from '../../prisma/prisma.service';
 export class EnchantRepository {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async findEnchant(name: string) {
+  createEnchant(createEnchantDto: Prisma.EnchantCreateInput) {
+    return this.prismaService.enchant.create({ data: createEnchantDto });
+  }
+
+  updateEnchant(
+    enchantId: number,
+    updateEnchantDto: Prisma.EnchantUpdateInput,
+  ) {
+    return this.prismaService.enchant.update({
+      where: { id: enchantId },
+      data: { ...updateEnchantDto },
+    });
+  }
+
+  async upsertEnchant(
+    enchantId: number,
+    upsertEnchantDetailDto: Prisma.EnchantUpdateInput,
+  ) {
+    return this.prismaService.enchant.update({
+      where: { id: enchantId },
+      data: { ...upsertEnchantDetailDto },
+    });
+  }
+
+  deleteEnchant(enchantId: number) {
+    return this.prismaService.enchant.delete({ where: { id: enchantId } });
+  }
+
+  async findEnchantByName(name: string) {
     return await this.prismaService.enchant.findUnique({
       where: {
         name,
+      },
+    });
+  }
+  async findEnchantById(id: number) {
+    return await this.prismaService.enchant.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        effects: true,
       },
     });
   }
@@ -59,6 +97,7 @@ export class EnchantRepository {
 }
 
 const baseRelationsSelect = {
+  id: true,
   name: true,
   category: true,
   enchantSlot: {

@@ -9,5 +9,6 @@ import { ItemAdminService } from './service/items-admin.service';
 @Module({
   controllers: [ItemController, ItemAdminController],
   providers: [ItemService, ItemAdminService, ItemRepository],
+  exports: [ItemService, ItemAdminService, ItemRepository],
 })
 export class ItemsModule {}

@@ -4,12 +4,10 @@ export class EnchantMapper {
   static toResponse(enchants: EnchantWithRelations[]) {
     return enchants.map((enchant) => {
       return {
+        id: enchant.id,
         name: enchant.name,
         rank: enchant.rank.name,
         affix: enchant.affix.value,
-        // slot: getUniqueBaseStrings(
-        //   enchant.enchantSlot.map((slot) => slot.slot.name),
-        // ),
         slot: enchant.enchantSlot.map((slot) => ({
           name: slot.slot.name,
           value: slot.slot.value,
