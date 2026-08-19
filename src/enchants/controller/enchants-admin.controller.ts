@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post } from '@nestjs/common';
 import { EnchantAdminService } from '../service/enchants-admin.service';
 import { CreateEnchantDto } from '../dto/create-enchant.dto';
 import { UpdateEnchantDto } from '../dto/update-enchant.dto';
@@ -48,6 +48,13 @@ export class EnchantsAdminController {
       enchantId,
       upsertEnchantDetailDto,
     );
+  }
+
+  @Delete('delete/:enchantId')
+  deleteEnchant(
+    @IntParam('enchantId', '올바른 ENCHANT ID가 필요합니다') enchantId: number,
+  ) {
+    return this.enchantAdminService.deleteEnchant(enchantId);
   }
 
   @Get('form')

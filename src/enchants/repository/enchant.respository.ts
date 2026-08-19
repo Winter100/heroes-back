@@ -47,8 +47,22 @@ export class EnchantRepository {
       where: {
         id,
       },
-      include: {
-        effects: true,
+      select: {
+        id: true,
+        name: true,
+        affix: true,
+        affixId: true,
+        rankId: true,
+        tierId: true,
+        effects: {
+          select: {
+            statId: true,
+            value: true,
+          },
+        },
+        enchantSlot: {
+          select: { slotId: true },
+        },
       },
     });
   }

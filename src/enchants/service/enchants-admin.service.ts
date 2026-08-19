@@ -63,30 +63,36 @@ export class EnchantAdminService {
     upsertEnchantDetailDto: UpsertEnchantDetailDto,
   ) {
     await this.enchantService.findEnchantById(enchantId);
+
     const upsertData: Prisma.EnchantUpdateInput = {};
-
-    if (upsertEnchantDetailDto && upsertEnchantDetailDto.slotsId.length > 0) {
+    if (upsertEnchantDetailDto?.slotsId) {
       upsertData.enchantSlot = {
-        createMany: {
-          data: upsertEnchantDetailDto.slotsId.map((slotId) => ({ slotId })),
-        },
+        deleteMany: { enchantId },
+        ...(upsertEnchantDetailDto.slotsId.length > 0 && {
+          createMany: {
+            data: upsertEnchantDetailDto.slotsId.map((slot) => ({
+              slotId: slot.slotId,
+            })),
+          },
+        }),
       };
     }
-
-    if (upsertEnchantDetailDto && upsertEnchantDetailDto.effects.length > 0) {
+    if (upsertEnchantDetailDto?.effects) {
       upsertData.effects = {
-        createMany: {
-          data: upsertEnchantDetailDto.effects.map((effect) => ({
-            statId: effect.stat_id,
-            value: effect.stat_value.toString(),
-          })),
-        },
+        deleteMany: { enchantId },
+
+        ...(upsertEnchantDetailDto.effects.length > 0 && {
+          createMany: {
+            data: upsertEnchantDetailDto.effects.map((effect) => ({
+              statId: effect.statId,
+              value: effect?.value ? effect?.value : '',
+            })),
+          },
+        }),
       };
     }
-
     return this.enchantRepository.upsertEnchant(enchantId, upsertData);
   }
-
   deleteEnchant(enchantId: number) {
     return this.enchantRepository.deleteEnchant(enchantId);
   }

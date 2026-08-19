@@ -1,21 +1,39 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsInt, IsNotEmpty, ValidateNested } from 'class-validator';
-import { Effects } from 'src/items/dto/item-create.dto';
+import {
+  IsArray,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+class SlotId {
+  @IsInt({ each: true })
+  @Type(() => Number)
+  slotId!: number;
+}
+
+export class Effect {
+  @IsInt()
+  @Min(1)
+  statId!: number;
+
+  @IsString()
+  @IsOptional()
+  value?: string;
+}
 
 export class UpsertEnchantDetailDto {
-  @IsInt()
-  @IsNotEmpty()
-  id!: number;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => Effect)
+  effects!: Effect[];
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => Effects)
-  effects!: Effects[];
-
-  @IsArray()
-  @IsInt({ each: true })
-  @Type(() => Number)
-  slotsId!: number[];
+  @Type(() => SlotId)
+  slotsId!: SlotId[];
 
   // @IsOptional()
   // @IsArray()
