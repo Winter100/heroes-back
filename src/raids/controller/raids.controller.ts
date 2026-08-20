@@ -4,23 +4,31 @@ import {
   RaidTableResponseDto,
 } from '../dto/raid-response.dto';
 import { RaidService } from '../service/raids.service';
+import { IntParam } from 'src/common/decorators/int.param';
 
 @Controller('raids')
 export class RaidsController {
   constructor(private readonly raidService: RaidService) {}
 
   @Get()
-  async findAll(): Promise<RaidResponseDto[]> {
-    return await this.raidService.findAllRaid();
+  findAll(): Promise<RaidResponseDto[]> {
+    return this.raidService.findAllRaid();
   }
 
   @Get('table')
-  async findTable(): Promise<RaidTableResponseDto[]> {
-    return await this.raidService.findTableRaid();
+  findTable(): Promise<RaidTableResponseDto[]> {
+    return this.raidService.findTableRaid();
   }
 
   @Post('drops')
   addItemDrop() {
     return;
+  }
+
+  @Get(':raidId')
+  async findOneById(
+    @IntParam('raidId', '올바른 RAID ID를 입력해주세요') raidId: number,
+  ) {
+    return this.raidService.findOneById(raidId);
   }
 }

@@ -1,4 +1,3 @@
-import { RaidDetailUpsertDto } from './../dto/raid-detail-upsert.dto';
 import { UpdateRaidDto } from './../dto/raid-update.dto';
 import { RaidCreateDto } from './../dto/raid-create.dto';
 import { Injectable } from '@nestjs/common';
@@ -16,6 +15,7 @@ export class RaidRepository {
   async findAllWithRelations() {
     return await this.prisma.raid.findMany({
       select: raidWithRelationsSelect,
+      orderBy: [{ raidTitle: { id: 'asc' } }, { id: 'asc' }],
     });
   }
 
@@ -32,14 +32,19 @@ export class RaidRepository {
       where: {
         id: raidId,
       },
+      select: raidWithRelationsSelect,
     });
+  }
+
+  upsertRaidDetil(raidId: number, data: Prisma.RaidUpdateInput) {
+    return this.prisma.raid.update({ where: { id: raidId }, data });
   }
 
   updateRaid(raidId: number, updateRaidDto: UpdateRaidDto, image?: string) {
     return this.prisma.raid.update({
       where: { id: raidId },
       data: {
-        raidTitleId: updateRaidDto.raidTitleId,
+        raidTitleId: updateRaidDto.raidId,
         battle: updateRaidDto.battle,
         boss: updateRaidDto.boss,
         level: updateRaidDto.level,
@@ -51,21 +56,12 @@ export class RaidRepository {
   async createRaid(raidCreateDto: RaidCreateDto, image?: string) {
     return await this.prisma.raid.create({
       data: {
-        raidTitleId: raidCreateDto.raidTitleId,
+        raidTitleId: raidCreateDto.raidId,
         battle: raidCreateDto.battle,
         boss: raidCreateDto.boss,
         level: raidCreateDto.level,
         image,
       },
-    });
-  }
-
-  async raidDetailUpsert(
-    raidId: number,
-    RaidDetailUpsertDto: RaidDetailUpsertDto,
-  ) {
-    return await this.prisma.$transaction(async (tx) => {
-      // 조건문으로 확인하면서 있다면 넣기
     });
   }
 
@@ -92,15 +88,12 @@ const raidWithRelationsSelect = Prisma.validator<Prisma.RaidSelect>()({
   boss: true,
   image: true,
   level: true,
-  raidTitle: {
-    select: {
-      name: true,
-    },
-  },
+  raidTitle: true,
   bossStat: {
     select: {
       stat: {
         select: {
+          id: true,
           name: true,
           image: true,
         },

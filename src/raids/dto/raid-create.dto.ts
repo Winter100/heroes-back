@@ -5,7 +5,7 @@ export class RaidCreateDto {
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-  raidTitleId!: number;
+  raidId!: number;
 
   @IsString()
   @IsNotEmpty()

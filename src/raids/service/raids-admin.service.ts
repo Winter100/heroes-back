@@ -11,7 +11,7 @@ import { RaidCreateDto } from '../dto/raid-create.dto';
 import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { UpdateRaidDto } from '../dto/raid-update.dto';
 import { RaidTitleCreateDto } from '../dto/raid-title-create.dto';
-import { RaidTitle } from '@prisma/client';
+import { Prisma, RaidTitle } from '@prisma/client';
 
 @Injectable()
 export class RaidAdminService {
@@ -90,13 +90,26 @@ export class RaidAdminService {
 
   async raidDetailUpsert(
     raidId: number,
-    RaidDetailUpsertDto: RaidDetailUpsertDto,
+    raidDetailUpsertDto: RaidDetailUpsertDto,
   ) {
     const findRaid = await this.raidRepository.findRaidById(raidId);
     if (!findRaid)
       throw new NotFoundException(`${raidId}에 해당하는 레이드가 없습니다`);
 
-    // 트랜잭션으로 진행하기
+    const raidDetailData: Prisma.RaidUpdateInput = {
+      bossStat: {
+        deleteMany: { raidId, type: raidDetailUpsertDto.mode },
+        createMany: {
+          data: raidDetailUpsertDto.effects.map((stat) => ({
+            statId: stat.id,
+            value: stat.stat_value,
+            type: raidDetailUpsertDto.mode,
+          })),
+        },
+      },
+    };
+
+    return this.raidRepository.upsertRaidDetil(raidId, raidDetailData);
   }
 
   async createRaidTitle(

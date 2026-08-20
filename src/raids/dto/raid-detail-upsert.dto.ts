@@ -1,56 +1,59 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsNotEmpty,
-  IsOptional,
-  IsString,
   ValidateNested,
 } from 'class-validator';
 
-class Stats {
-  @Type(() => Number)
-  @IsInt()
-  @IsNotEmpty()
-  statId!: number;
+// class Stats {
+//   @Type(() => Number)
+//   @IsInt()
+//   @IsNotEmpty()
+//   statId!: number;
 
-  @Type(() => Number)
-  @IsInt()
-  @IsNotEmpty()
-  value!: number;
-}
+//   @Type(() => Number)
+//   @IsInt()
+//   @IsNotEmpty()
+//   value!: number;
+// }
 
 class BossStats {
-  @IsString()
+  @IsInt()
   @IsNotEmpty()
-  type!: string;
+  @Type(() => Number)
+  id!: number;
 
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => Stats)
-  effects!: Stats[];
+  @IsInt()
+  @IsNotEmpty()
+  @Type(() => Number)
+  stat_value!: number;
 }
 
-class BossBonus {
-  @IsString()
-  @IsNotEmpty()
-  bonus!: string;
+// class BossBonus {
+//   @IsString()
+//   @IsNotEmpty()
+//   bonus!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  value!: string;
-}
+//   @IsString()
+//   @IsNotEmpty()
+//   value!: string;
+// }
 
 export class RaidDetailUpsertDto {
-  @IsOptional()
+  @IsEnum(['ENTRY', 'LIMIT'])
+  @IsNotEmpty()
+  mode!: 'ENTRY' | 'LIMIT';
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => BossStats)
-  bossStats?: BossStats[];
+  effects!: BossStats[];
 
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => BossBonus)
-  bonus?: BossBonus[];
+  // @IsOptional()
+  // @IsArray()
+  // @ValidateNested({ each: true })
+  // @Type(() => BossBonus)
+  // bonus?: BossBonus[];
 }
