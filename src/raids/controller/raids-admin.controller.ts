@@ -4,7 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  Patch,
   Post,
   UploadedFile,
   UseGuards,
@@ -22,8 +21,8 @@ import { RaidAdminService } from '../service/raids-admin.service';
 import { IntParam } from 'src/common/decorators/int.param';
 import { RaidDetailUpsertDto } from '../dto/raid-detail-upsert.dto';
 
-// @Roles(UserRole.ADMIN)
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('raids-admin')
 export class RaidsAdminController {
   constructor(private readonly raidAdminService: RaidAdminService) {}

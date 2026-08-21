@@ -1,10 +1,16 @@
-import { Body, Controller, Delete, Get, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Post, UseGuards } from '@nestjs/common';
 import { EnchantAdminService } from '../service/enchants-admin.service';
 import { CreateEnchantDto } from '../dto/create-enchant.dto';
 import { UpdateEnchantDto } from '../dto/update-enchant.dto';
 import { IntParam } from 'src/common/decorators/int.param';
 import { UpsertEnchantDetailDto } from '../dto/upsert-enchant-detail.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-token.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
+@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('enchants-admin')
 export class EnchantsAdminController {
   constructor(private readonly enchantAdminService: EnchantAdminService) {}

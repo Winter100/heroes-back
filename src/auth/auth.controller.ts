@@ -32,20 +32,21 @@ export class AuthController {
       await this.authService.signin(req.user);
     res.cookie('refreshToken', refresh_token, {
       httpOnly: true,
-      sameSite: 'strict',
+      sameSite: 'lax',
+      // sameSite: 'strict',
       expires: expiresAt,
-      path: '/auth',
+      path: '/',
     });
-    return { access_token };
+    return { accessToken: access_token };
   }
 
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
   async refresh(@Request() req: { user: { userId: string } }) {
     const user = await this.authService.findUserByUserId(req.user.userId);
-    const access_token = await this.authService.signAccessToken(user);
+    const { access_token } = await this.authService.signAccessToken(user);
 
-    return { access_token };
+    return { accessToken: access_token };
   }
 
   @Roles(UserRole.ADMIN)

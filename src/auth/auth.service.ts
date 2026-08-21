@@ -107,11 +107,22 @@ export class AuthService {
   async validateUser(email: string, password: string) {
     const user = await this.usersService.findUserByEmail(email);
 
-    if (!user) return null;
+    if (!user) {
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: '아이디 또는 비밀번호가 올바르지 않습니다.',
+      });
+    }
+    const isMatch = await PasswordHasher.compare(password, user.password);
 
-    const isSameUser = await PasswordHasher.compare(password, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException({
+        code: 'INVALID_CREDENTIALS',
+        message: '아이디 또는 비밀번호가 올바르지 않습니다.',
+      });
+    }
 
-    if (isSameUser) {
+    if (isMatch) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, createdAt, updatedAt, ...result } = user;
       return result;

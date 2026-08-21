@@ -23,8 +23,8 @@ import {
 import { UpdateItemDto } from '../dto/item-update.dto';
 import { IntParam } from 'src/common/decorators/int.param';
 
-// @Roles(UserRole.ADMIN)
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('items-admin')
 export class ItemAdminController {
   constructor(private readonly itemAdminService: ItemAdminService) {}

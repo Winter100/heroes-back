@@ -1,15 +1,10 @@
 import {
-  BadRequestException,
   Body,
-  ClassSerializerInterceptor,
   Controller,
   Delete,
   HttpCode,
   HttpStatus,
-  Param,
-  ParseIntPipe,
   Post,
-  SerializeOptions,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -28,17 +23,8 @@ import { UpdateSkillDto } from '../dto/update-skill.dto';
 import { DisconnectClassSkill } from '../dto/disconnect-class-skill.dto';
 import { IntParam } from 'src/common/decorators/int.param';
 
-/**
- * 관리자 전용 컨트롤러
- *
- * 캐릭터 직업 관련 CRUD
- * 1. 직업 등록
- * - 직업명, 성별, 이미지, 출시일
- */
-@UseInterceptors(ClassSerializerInterceptor)
-@SerializeOptions({ excludeExtraneousValues: true })
-// @Roles(UserRole.ADMIN)
-// @UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('characters-admin')
 export class CharactersAdminController {
   constructor(private charactersAdminService: CharactersAdminService) {}
