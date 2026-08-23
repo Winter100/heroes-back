@@ -9,5 +9,6 @@ import { CharactersAdminController } from './controller/characters-admin.control
   imports: [],
   controllers: [CharactersController, CharactersAdminController],
   providers: [CharactersService, CharactersAdminService, CharacterRepository],
+  exports: [CharactersService],
 })
 export class CharactersModule {}

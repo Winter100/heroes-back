@@ -82,6 +82,61 @@ export class EnchantRepository {
     });
   }
 
+  async getEnchantStats() {
+    const [total, rank, tier, affix] = await Promise.all([
+      this.prismaService.enchant.count(),
+
+      this.prismaService.rank.findMany({
+        where: {
+          id: {
+            notIn: [11, 12, 13, 14, 15],
+          },
+        },
+        select: {
+          name: true,
+          _count: {
+            select: {
+              enchant: true,
+            },
+          },
+        },
+      }),
+
+      this.prismaService.itemTier.findMany({
+        where: {
+          id: {
+            notIn: [7],
+          },
+        },
+        select: {
+          name: true,
+          _count: {
+            select: {
+              enchants: true,
+            },
+          },
+        },
+      }),
+
+      this.prismaService.enchant.groupBy({
+        by: ['affixId'],
+        _count: {
+          _all: true,
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      ranks: rank.map((r) => ({ rank: r.name, count: r._count.enchant })),
+      tiers: tier.map((t) => ({ rank: t.name, count: t._count.enchants })),
+      affixs: affix.map((a) => ({
+        name: a.affixId === 1 ? '접두' : '접미',
+        count: a._count._all,
+      })),
+    };
+  }
+
   async updateEnchantDrop(enchantDropCreateDto: EnchantDropCreateDto) {
     const { enchantName, battleName, itemName } = enchantDropCreateDto;
     await this.prismaService.enchantDrop.create({

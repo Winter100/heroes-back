@@ -11,5 +11,6 @@ import { ItemsModule } from 'src/items/items.module';
   imports: [NexonModule, ItemsModule],
   controllers: [EnchantsController, EnchantsAdminController],
   providers: [EnchantService, EnchantAdminService, EnchantRepository],
+  exports: [EnchantService],
 })
 export class EnchantsModule {}

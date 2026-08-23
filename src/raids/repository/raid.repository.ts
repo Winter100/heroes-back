@@ -80,6 +80,27 @@ export class RaidRepository {
       },
     });
   }
+
+  async findStatistics() {
+    const [count, raid] = await Promise.all([
+      this.prisma.raid.count(),
+      this.prisma.raidTitle.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: {
+              raid: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      count,
+      raids: raid.map((r) => ({ name: r.name, count: r._count.raid })),
+    };
+  }
 }
 
 const raidWithRelationsSelect = Prisma.validator<Prisma.RaidSelect>()({

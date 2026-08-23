@@ -60,4 +60,11 @@ export class EnchantService {
       return [];
     }
   }
+
+  /**
+   * 인챈트 통계
+   **/
+  async findStatistics() {
+    return this.enchantRepository.getEnchantStats();
+  }
 }

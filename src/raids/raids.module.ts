@@ -9,5 +9,6 @@ import { RaidAdminService } from './service/raids-admin.service';
   imports: [],
   controllers: [RaidsController, RaidsAdminController],
   providers: [RaidService, RaidAdminService, RaidRepository],
+  exports: [RaidService],
 })
 export class RaidsModule {}

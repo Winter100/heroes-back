@@ -16,6 +16,7 @@ import { HealthModule } from './health/health.module';
 import { NoticeModule } from './notice/notice.module';
 import { NexonModule } from './nexon/nexon.module';
 // import { APP_GUARD } from '@nestjs/core';
+import { StatisticsModule } from './statistics/statistics.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { NexonModule } from './nexon/nexon.module';
     HealthModule,
     NoticeModule,
     NexonModule,
+    StatisticsModule,
   ],
   controllers: [],
   providers: [

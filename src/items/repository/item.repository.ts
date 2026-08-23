@@ -122,6 +122,46 @@ export class ItemRepository {
     });
   }
 
+  async findStatistics() {
+    const [count, tier, category] = await Promise.all([
+      this.prismaService.item.count(),
+      this.prismaService.itemTier.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: {
+              items: true,
+            },
+          },
+        },
+      }),
+      this.prismaService.category.findMany({
+        where: {
+          id: {
+            notIn: [4],
+          },
+        },
+        select: {
+          name: true,
+          _count: {
+            select: {
+              items: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total: count,
+      tiers: tier.map((s) => ({ name: s.name, count: s._count.items })),
+      categories: category.map((c) => ({
+        name: c.name,
+        count: c._count.items,
+      })),
+    };
+  }
+
   getSlots() {
     return this.prismaService.slot.findMany({
       orderBy: { id: 'asc' },

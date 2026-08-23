@@ -108,4 +108,8 @@ export class ItemService {
   async getUnImage() {
     return await this.itemRepository.getUnImageItemsList();
   }
+
+  findStatistics() {
+    return this.itemRepository.findStatistics();
+  }
 }

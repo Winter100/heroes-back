@@ -42,14 +42,15 @@ export class CharactersService {
    *
    */
   async findStatistics() {
-    const [characters, count] = await Promise.all([
+    const [total, characters, genderCount] = await Promise.all([
+      this.characterRepository.count(),
       this.findAllCharacter(),
       this.countGender(),
     ]);
 
     const year = CharacterMapper.toYear(characters);
-    const genderCount = CharacterMapper.toGenderCount(count);
-    return { year, genderCount };
+    const gCount = CharacterMapper.toGenderCount(genderCount);
+    return { total, year, genderCount: gCount };
   }
 
   async countGender() {

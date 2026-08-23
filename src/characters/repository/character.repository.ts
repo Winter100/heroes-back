@@ -248,6 +248,10 @@ export class CharacterRepository {
     });
   }
 
+  async count() {
+    return await this.prismaService.character.count();
+  }
+
   async countGender() {
     return await this.prismaService.character.groupBy({
       by: ['gender'],

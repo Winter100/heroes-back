@@ -29,4 +29,8 @@ export class RaidService {
     const response = RaidMapper.toRaidTableResponse(dbRaid);
     return raidSort(response);
   }
+
+  findStatistics() {
+    return this.raidRepository.findStatistics();
+  }
 }
