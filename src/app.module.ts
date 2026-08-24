@@ -17,12 +17,78 @@ import { NoticeModule } from './notice/notice.module';
 import { NexonModule } from './nexon/nexon.module';
 // import { APP_GUARD } from '@nestjs/core';
 import { StatisticsModule } from './statistics/statistics.module';
+import { LoggerModule } from 'nestjs-pino';
+import { randomUUID } from 'node:crypto';
+import { IncomingMessage, ServerResponse } from 'node:http';
+import { GlobalExceptionFilter } from './all-exceptions.filter';
+import { APP_FILTER } from '@nestjs/core';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    LoggerModule.forRoot({
+      pinoHttp: {
+        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
+
+        genReqId: (req, res) => {
+          const existingId = req.headers['x-request-id'];
+
+          if (typeof existingId === 'string' && existingId.length > 0) {
+            return existingId;
+          }
+
+          const id = randomUUID();
+          res.setHeader('X-Request-Id', id);
+          return id;
+        },
+
+        serializers: {
+          req: (req: IncomingMessage & { id?: string }) => ({
+            id: req.id,
+            method: req.method,
+            url: req.url,
+          }),
+          res: (res: ServerResponse) => ({
+            statusCode: res.statusCode,
+          }),
+        },
+        redact: {
+          paths: [
+            'req.body.password',
+            'req.body.refreshToken',
+            '*.accessToken',
+            '*.refreshToken',
+          ],
+          censor: '**REDACTED**',
+        },
+
+        customLogLevel: (req, res, err) => {
+          if (res.statusCode >= 500 || err) return 'error';
+          if (res.statusCode >= 400) return 'warn';
+          return 'info';
+        },
+
+        customSuccessMessage: (req, res) =>
+          `${req.method} ${req.url} completed`,
+        // customErrorMessage: (req, res, err) =>
+        //   `${req.method} ${req.url} failed`,
+
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { singleLine: true } }
+            : undefined,
+
+        autoLogging: {
+          ignore: (req) => {
+            const ignoredPaths = ['/favicon.ico', '/health', '/robots.txt'];
+
+            return ignoredPaths.includes(req.url ?? '');
+          },
+        },
+      },
     }),
     // ThrottlerModule.forRootAsync({
     //   imports: [ConfigModule],
@@ -55,6 +121,10 @@ import { StatisticsModule } from './statistics/statistics.module';
   ],
   controllers: [],
   providers: [
+    {
+      provide: APP_FILTER,
+      useClass: GlobalExceptionFilter,
+    },
     // {
     //   provide: APP_GUARD,
     //   useClass: ThrottlerGuard,

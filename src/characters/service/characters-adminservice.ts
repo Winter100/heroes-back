@@ -14,10 +14,13 @@ import { plainToInstance } from 'class-transformer';
 import { UpdateClassDto } from '../dto/character-class-update.dto';
 import { UpdateSkillDto } from '../dto/update-skill.dto';
 import { DisconnectClassSkill } from '../dto/disconnect-class-skill.dto';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class CharactersAdminService {
   constructor(
+    @InjectPinoLogger(CharactersAdminService.name)
+    private readonly logger: PinoLogger,
     private readonly imageUploadService: ImageUploadService,
     private readonly characterRepository: CharacterRepository,
   ) {}
@@ -32,11 +35,14 @@ export class CharactersAdminService {
     createClassDto: CreateClassDto,
     image?: Express.Multer.File,
   ): Promise<CharacterClassResponseDto> {
+    this.logger.info({ className: createClassDto.name }, 'create class start');
     const findClass = await this.characterRepository.findOneClassByName(
       createClassDto.name,
     );
 
-    if (findClass) throw new BadRequestException('이미 존재하는 캐릭터 입니다');
+    if (findClass) {
+      throw new BadRequestException('이미 존재하는 캐릭터 입니다');
+    }
 
     const imageUrl: string | undefined = image
       ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.characters)
@@ -47,11 +53,15 @@ export class CharactersAdminService {
       imageUrl,
     );
 
-    if (!response)
+    if (!response) {
       throw new BadRequestException(
-        `${CreateClassDto.name}의 생성에 실패했습니다.`,
+        `${createClassDto.name}의 생성에 실패했습니다.`,
       );
-
+    }
+    this.logger.info(
+      { className: createClassDto.name },
+      'create class succeeded',
+    );
     return plainToInstance(CharacterClassResponseDto, response);
   }
 
@@ -66,6 +76,7 @@ export class CharactersAdminService {
     classId: number,
     image?: Express.Multer.File,
   ) {
+    this.logger.info({ className: updateClassDto.name }, 'update class start');
     const findClass = await this.characterRepository.findOneClass(classId);
 
     if (!findClass)
@@ -86,6 +97,10 @@ export class CharactersAdminService {
         await this.imageUploadService.deleteImage(findClass.image);
       }
 
+      this.logger.info(
+        { className: updateClassDto.name },
+        'update class succeeded',
+      );
       return updateClass;
     } catch (error) {
       if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
@@ -114,6 +129,10 @@ export class CharactersAdminService {
     createSkillDto: CreateSkillDto,
     image?: Express.Multer.File,
   ) {
+    this.logger.info(
+      { skillName: createSkillDto.name, classId: createSkillDto.classIds },
+      'create class skill start',
+    );
     const findSkill = await this.findOneSkillByName(createSkillDto.name);
 
     if (findSkill)
@@ -125,10 +144,17 @@ export class CharactersAdminService {
       ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.skills)
       : undefined;
 
-    return await this.characterRepository.createSkillCombineClassId(
-      createSkillDto,
-      imageUrl,
+    const createdSkill =
+      await this.characterRepository.createSkillCombineClassId(
+        createSkillDto,
+        imageUrl,
+      );
+
+    this.logger.info(
+      { skillName: createSkillDto.name, classId: createSkillDto.classIds },
+      'create class skill succeeded',
     );
+    return createdSkill;
   }
 
   /**
@@ -142,6 +168,14 @@ export class CharactersAdminService {
     skillId: number,
     image?: Express.Multer.File,
   ) {
+    this.logger.info(
+      {
+        skillId,
+        skillName: updateSkillDto.name,
+        classId: updateSkillDto.classIds,
+      },
+      'update class skill start',
+    );
     const skill = await this.findOneSkillById(skillId);
     if (!skill)
       throw new NotFoundException(`skillId: ${skillId}가 존재하지 않습니다.`);
@@ -162,6 +196,14 @@ export class CharactersAdminService {
         await this.imageUploadService.deleteImage(skill.image);
       }
 
+      this.logger.info(
+        {
+          skillId,
+          skillName: updateSkillDto.name,
+          classId: updateSkillDto.classIds,
+        },
+        'update class skill succeeded',
+      );
       return updateClassSkill;
     } catch (error) {
       if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
@@ -183,6 +225,10 @@ export class CharactersAdminService {
     connectClassSkill: DisconnectClassSkill,
     skillId: number,
   ) {
+    this.logger.info(
+      { skillId, classId: connectClassSkill.classId },
+      'delete class skill start',
+    );
     const connectedCharacterSkill =
       await this.characterRepository.findConnectClassSkill(
         connectClassSkill.classId,
@@ -190,6 +236,11 @@ export class CharactersAdminService {
       );
     if (!connectedCharacterSkill)
       throw new NotFoundException('스킬을 찾을 수 없습니다.');
+
+    this.logger.info(
+      { skillId, classId: connectClassSkill.classId },
+      'delete class skill succeeded',
+    );
     return await this.characterRepository.disconnectClassSkill(
       connectedCharacterSkill.id,
     );

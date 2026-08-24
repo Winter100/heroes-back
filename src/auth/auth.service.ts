@@ -13,10 +13,13 @@ import { ConfigService } from '@nestjs/config';
 import { AuthJwtPayload } from './types/auth-jwt-payload';
 import * as argon2 from 'argon2';
 import { TOKEN_KEY } from './constant/key';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class AuthService {
   constructor(
+    @InjectPinoLogger(AuthService.name)
+    private readonly logger: PinoLogger,
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly refreshTokenRepository: RefreshTokenRepository,
@@ -32,6 +35,7 @@ export class AuthService {
     refresh_token: string;
     expiresAt: Date;
   }> {
+    this.logger.info({ userId: user.id }, 'login start');
     await this.refreshTokenRepository.revokeAllUserTokens(user.id);
 
     const { access_token } = await this.signAccessToken(user);
@@ -39,19 +43,20 @@ export class AuthService {
       user.id,
     );
 
+    this.logger.info({ userId: user.id, expiresAt }, 'login succeeded');
     return { access_token, refresh_token, expiresAt };
   }
 
   async signAccessToken(user: AuthUser) {
+    this.logger.info({ userId: user.id }, 'create access token start');
     const payload: AuthJwtPayload = {
       sub: user.id,
       email: user.email,
       role: user.role,
       name: user.name,
     };
-
     const access_token = await this.jwtService.signAsync(payload);
-
+    this.logger.info({ userId: user.id }, 'create access token succeeded');
     return { access_token };
   }
 
@@ -85,18 +90,29 @@ export class AuthService {
   }
 
   async validateRefreshToken(userId: string, refreshToken: string) {
+    this.logger.info({ userId }, 'validate RefreshToken Start');
+
     const dbRefreshToken = await this.refreshTokenRepository.findOne(userId);
 
-    if (!dbRefreshToken)
+    if (!dbRefreshToken) {
+      this.logger.warn({ userId }, "db - don't have refresh token");
       throw new UnauthorizedException('Invalid Refresh Token');
+    }
 
     const refreshTokenMatches = await argon2.verify(
       dbRefreshToken.token,
       refreshToken,
     );
-    if (!refreshTokenMatches)
-      throw new UnauthorizedException('Invalid Refresh Token');
 
+    if (!refreshTokenMatches) {
+      this.logger.warn(
+        { userId, matches: refreshTokenMatches },
+        'db - not matches refresh token',
+      );
+      throw new UnauthorizedException('Invalid Refresh Token');
+    }
+
+    this.logger.info({ userId }, 'validate RefreshToken Succeeded');
     return { userId: dbRefreshToken.userId };
   }
 
@@ -105,9 +121,11 @@ export class AuthService {
   }
 
   async validateUser(email: string, password: string) {
+    this.logger.info({ email: email }, 'validateUser Start');
     const user = await this.usersService.findUserByEmail(email);
 
     if (!user) {
+      this.logger.warn({ email: email }, 'unValidateUser email');
       throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: '아이디 또는 비밀번호가 올바르지 않습니다.',
@@ -116,6 +134,7 @@ export class AuthService {
     const isMatch = await PasswordHasher.compare(password, user.password);
 
     if (!isMatch) {
+      this.logger.warn({ email: email }, 'unValidateUser password');
       throw new UnauthorizedException({
         code: 'INVALID_CREDENTIALS',
         message: '아이디 또는 비밀번호가 올바르지 않습니다.',
@@ -123,6 +142,7 @@ export class AuthService {
     }
 
     if (isMatch) {
+      this.logger.info({ email: email }, 'validateUser succeeded');
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, createdAt, updatedAt, ...result } = user;
       return result;

@@ -12,10 +12,13 @@ import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { UpdateRaidDto } from '../dto/raid-update.dto';
 import { RaidTitleCreateDto } from '../dto/raid-title-create.dto';
 import { Prisma, RaidTitle } from '@prisma/client';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class RaidAdminService {
   constructor(
+    @InjectPinoLogger(RaidAdminService.name)
+    private readonly logger: PinoLogger,
     private readonly raidRepository: RaidRepository,
     private readonly imageUploadService: ImageUploadService,
   ) {}
@@ -25,11 +28,19 @@ export class RaidAdminService {
   }
 
   async createRaid(raidCreateDto: RaidCreateDto, image?: Express.Multer.File) {
+    this.logger.info(
+      { raidId: raidCreateDto.raidId, battle: raidCreateDto.battle },
+      'create raid start',
+    );
     const imageUrl = image
       ? await this.imageUploadService.uploadImage(image, BUCKET_NAME.raidImages)
       : undefined;
 
     try {
+      this.logger.info(
+        { raidId: raidCreateDto.raidId, battle: raidCreateDto.battle },
+        'create raid succeeded',
+      );
       return await this.raidRepository.createRaid(raidCreateDto, imageUrl);
     } catch (e) {
       if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
@@ -42,6 +53,7 @@ export class RaidAdminService {
     updateRaidDto: UpdateRaidDto,
     image?: Express.Multer.File,
   ) {
+    this.logger.info({ raidId }, 'update raid start');
     const findRaid = await this.raidRepository.findRaidById(raidId);
 
     if (!findRaid)
@@ -61,6 +73,7 @@ export class RaidAdminService {
       if (findRaid.image && imageUrl)
         await this.imageUploadService.deleteImage(findRaid.image);
 
+      this.logger.info({ raidId }, 'update raid succeeded');
       return {
         message: `${updateRaid.battle}을 수정했습니다.`,
       };
@@ -75,6 +88,7 @@ export class RaidAdminService {
   }
 
   async deleteRaid(raidId: number) {
+    this.logger.info({ raidId }, 'delete raid start');
     const findRaid = await this.raidRepository.findRaidById(raidId);
     if (!findRaid)
       throw new NotFoundException(`${raidId}에 해당하는 레이드가 없습니다`);
@@ -82,6 +96,7 @@ export class RaidAdminService {
       await this.raidRepository.delete(raidId);
       if (findRaid.image)
         await this.imageUploadService.deleteImage(findRaid.image);
+      this.logger.info({ raidId }, 'delete raid succeeded');
       return { message: '삭제에 성공했습니다' };
     } catch (error) {
       throw new InternalServerErrorException(error);
@@ -92,6 +107,7 @@ export class RaidAdminService {
     raidId: number,
     raidDetailUpsertDto: RaidDetailUpsertDto,
   ) {
+    this.logger.info({ raidId }, 'start detail upsert raid start');
     const findRaid = await this.raidRepository.findRaidById(raidId);
     if (!findRaid)
       throw new NotFoundException(`${raidId}에 해당하는 레이드가 없습니다`);
@@ -108,7 +124,7 @@ export class RaidAdminService {
         },
       },
     };
-
+    this.logger.info({ raidId }, 'start detail upsert raid succeeded');
     return this.raidRepository.upsertRaidDetil(raidId, raidDetailData);
   }
 

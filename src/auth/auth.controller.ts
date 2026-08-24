@@ -42,11 +42,25 @@ export class AuthController {
 
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
-  async refresh(@Request() req: { user: { userId: string } }) {
-    const user = await this.authService.findUserByUserId(req.user.userId);
-    const { access_token } = await this.authService.signAccessToken(user);
+  async refresh(
+    @Request() req: { user: { userId: string } },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    try {
+      const user = await this.authService.findUserByUserId(req.user.userId);
+      const { access_token } = await this.authService.signAccessToken(user);
 
-    return { accessToken: access_token };
+      return { accessToken: access_token };
+    } catch (error) {
+      res.clearCookie('refreshToken', {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path: '/',
+      });
+
+      throw error;
+    }
   }
 
   @Roles(UserRole.ADMIN)
@@ -56,9 +70,20 @@ export class AuthController {
     await this.authService.signup(signUpDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  // @UseGuards(JwtAuthGuard)
   @Post('signout')
-  async signOut(@Req() req: AuthUser) {
+  async signOut(
+    @Req() req: AuthUser,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     await this.authService.signOut(req.id);
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+    });
+
+    return { message: '로그아웃 되었습니다' };
   }
 }

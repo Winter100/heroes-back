@@ -10,10 +10,13 @@ import { EnchantTransformer } from '../enchant-transformer';
 import { aggregateByEnchantPreset } from '../util/enchant-util';
 import { Prisma } from '@prisma/client';
 import { ItemAdminService } from 'src/items/service/items-admin.service';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class EnchantAdminService {
   constructor(
+    @InjectPinoLogger(EnchantAdminService.name)
+    private readonly logger: PinoLogger,
     private readonly enchantRepository: EnchantRepository,
     private readonly nexonService: NexonService,
     private readonly itemAdminService: ItemAdminService,
@@ -21,6 +24,10 @@ export class EnchantAdminService {
   ) {}
 
   createEnchant(createEnchantDto: CreateEnchantDto) {
+    this.logger.info(
+      { enchant: createEnchantDto.name },
+      'create enchant start',
+    );
     const createData: Prisma.EnchantCreateInput = {
       name: createEnchantDto.name,
       rank: { connect: { id: createEnchantDto.rankId } },
@@ -28,10 +35,18 @@ export class EnchantAdminService {
       category: createEnchantDto.category,
       affix: { connect: { id: createEnchantDto.affixId } },
     };
+    this.logger.info(
+      { enchant: createEnchantDto.name },
+      'create enchant succeeded',
+    );
     return this.enchantRepository.createEnchant(createData);
   }
 
   async updateEnchant(enchantId: number, updateEnchantDto: UpdateEnchantDto) {
+    this.logger.info(
+      { enchantId: enchantId, updateName: updateEnchantDto.name },
+      'update enchant start',
+    );
     await this.enchantService.findEnchantById(enchantId);
     const updateData: Prisma.EnchantUpdateInput = {};
 
@@ -55,6 +70,7 @@ export class EnchantAdminService {
       updateData.affix = { connect: { id: updateEnchantDto.affixId } };
     }
 
+    this.logger.info({ enchantId: enchantId }, 'update enchant succeeded');
     return this.enchantRepository.updateEnchant(enchantId, updateData);
   }
 
@@ -62,6 +78,7 @@ export class EnchantAdminService {
     enchantId: number,
     upsertEnchantDetailDto: UpsertEnchantDetailDto,
   ) {
+    this.logger.info({ enchantId: enchantId }, 'upsert detail enchant start');
     await this.enchantService.findEnchantById(enchantId);
 
     const upsertData: Prisma.EnchantUpdateInput = {};
@@ -91,10 +108,17 @@ export class EnchantAdminService {
         }),
       };
     }
+    this.logger.info(
+      { enchantId: enchantId },
+      'upsert detail enchant succeeded',
+    );
     return this.enchantRepository.upsertEnchant(enchantId, upsertData);
   }
-  deleteEnchant(enchantId: number) {
-    return this.enchantRepository.deleteEnchant(enchantId);
+  async deleteEnchant(enchantId: number) {
+    this.logger.info({ enchantId }, 'delete enchant start');
+    const deleted = await this.enchantRepository.deleteEnchant(enchantId);
+    this.logger.info({ enchantId }, 'delete enchant succeeded');
+    return deleted;
   }
 
   async getEnchantFormData() {
@@ -116,10 +140,6 @@ export class EnchantAdminService {
       }),
     );
   }
-
-  // async updateEnchant(enchantDropCreateDto: EnchantDropCreateDto) {
-  //   return await this.enchantRepository.updateEnchantDrop(enchantDropCreateDto);
-  // }
 
   async findAllPrice() {
     try {
