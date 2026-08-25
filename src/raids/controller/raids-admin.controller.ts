@@ -27,11 +27,13 @@ import { RaidDetailUpsertDto } from '../dto/raid-detail-upsert.dto';
 export class RaidsAdminController {
   constructor(private readonly raidAdminService: RaidAdminService) {}
 
+  // 모든 레이드 타이틀 정보 조회
   @Get('titles')
   getRaidTitles() {
     return this.raidAdminService.findAllRaidTitles();
   }
 
+  // 기본 레이드 생성
   @UseInterceptors(FileInterceptor('image'))
   @Post('create')
   createRaid(
@@ -41,6 +43,7 @@ export class RaidsAdminController {
     return this.raidAdminService.createRaid(createRaidDto, image);
   }
 
+  // 기본 레이드 정보 수정
   @UseInterceptors(FileInterceptor('image'))
   @Post('update/:raidId')
   updateRaid(
@@ -51,6 +54,7 @@ export class RaidsAdminController {
     return this.raidAdminService.updateRaid(raidId, updateRaidDto, image);
   }
 
+  // 레이드 상세 정보 수정
   @Post('detail-upsert/:raidId')
   upsertDetailRaid(
     @Body() raidDetailUpsertDto: RaidDetailUpsertDto,
@@ -59,6 +63,7 @@ export class RaidsAdminController {
     return this.raidAdminService.raidDetailUpsert(raidId, raidDetailUpsertDto);
   }
 
+  // 기본 레이드 삭제
   @Delete('delete/:raidId')
   deleteRaid(
     @IntParam('raidId', '올바른 RAIDID를 입력해주세요') raidId: number,
@@ -66,6 +71,7 @@ export class RaidsAdminController {
     return this.raidAdminService.deleteRaid(raidId);
   }
 
+  // 레이드 명 추가
   @Post('title')
   createRaidTitle(
     @Body() raidTitleCreateDto: RaidTitleCreateDto,

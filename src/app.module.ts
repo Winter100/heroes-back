@@ -31,23 +31,23 @@ import { APP_FILTER } from '@nestjs/core';
     }),
     LoggerModule.forRoot({
       pinoHttp: {
-        level: process.env.NODE_ENV !== 'production' ? 'debug' : 'info',
-
+        level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
         genReqId: (req, res) => {
           const existingId = req.headers['x-request-id'];
 
-          if (typeof existingId === 'string' && existingId.length > 0) {
-            return existingId;
-          }
+          const id =
+            typeof existingId === 'string' && existingId.length > 0
+              ? existingId
+              : randomUUID();
 
-          const id = randomUUID();
           res.setHeader('X-Request-Id', id);
+
           return id;
         },
 
         serializers: {
           req: (req: IncomingMessage & { id?: string }) => ({
-            id: req.id,
+            reqId: req.id,
             method: req.method,
             url: req.url,
           }),
@@ -73,12 +73,15 @@ import { APP_FILTER } from '@nestjs/core';
 
         customSuccessMessage: (req, res) =>
           `${req.method} ${req.url} completed`,
-        // customErrorMessage: (req, res, err) =>
-        //   `${req.method} ${req.url} failed`,
 
         transport:
           process.env.NODE_ENV !== 'production'
-            ? { target: 'pino-pretty', options: { singleLine: true } }
+            ? {
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                },
+              }
             : undefined,
 
         autoLogging: {

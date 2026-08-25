@@ -23,10 +23,20 @@ export class RaidAdminService {
     private readonly imageUploadService: ImageUploadService,
   ) {}
 
+  /**
+   * 모든 레이드 타이틀 조회
+   * @returns
+   */
   findAllRaidTitles() {
     return this.raidRepository.findAllRaidTitles();
   }
 
+  /**
+   * 기본 레이드 생성
+   * @param raidCreateDto
+   * @param image
+   * @returns
+   */
   async createRaid(raidCreateDto: RaidCreateDto, image?: Express.Multer.File) {
     this.logger.info(
       { raidId: raidCreateDto.raidId, battle: raidCreateDto.battle },
@@ -48,6 +58,13 @@ export class RaidAdminService {
     }
   }
 
+  /**
+   * 기본 레이드 수정
+   * @param raidId
+   * @param updateRaidDto
+   * @param image
+   * @returns
+   */
   async updateRaid(
     raidId: number,
     updateRaidDto: UpdateRaidDto,
@@ -87,6 +104,11 @@ export class RaidAdminService {
     }
   }
 
+  /**
+   * 기본 레이드 삭제
+   * @param raidId
+   * @returns
+   */
   async deleteRaid(raidId: number) {
     this.logger.info({ raidId }, 'delete raid start');
     const findRaid = await this.raidRepository.findRaidById(raidId);
@@ -103,6 +125,12 @@ export class RaidAdminService {
     }
   }
 
+  /**
+   * 레이드 상세 정보 수정
+   * @param raidId
+   * @param raidDetailUpsertDto
+   * @returns
+   */
   async raidDetailUpsert(
     raidId: number,
     raidDetailUpsertDto: RaidDetailUpsertDto,
@@ -128,6 +156,11 @@ export class RaidAdminService {
     return this.raidRepository.upsertRaidDetil(raidId, raidDetailData);
   }
 
+  /**
+   * 레이드 타이틀 생성
+   * @param raidTitleCreateDto
+   * @returns
+   */
   async createRaidTitle(
     raidTitleCreateDto: RaidTitleCreateDto,
   ): Promise<RaidTitle> {

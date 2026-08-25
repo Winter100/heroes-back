@@ -29,6 +29,7 @@ import { IntParam } from 'src/common/decorators/int.param';
 export class ItemAdminController {
   constructor(private readonly itemAdminService: ItemAdminService) {}
 
+  // 기본 아이템 생성
   @UseInterceptors(FileInterceptor('image'))
   @Post()
   createItem(
@@ -49,7 +50,7 @@ export class ItemAdminController {
     return this.itemAdminService.updateItem(itemId, updateItemDto, image);
   }
 
-  // 아이템 강화 별 스텟 설정
+  // 아이템 강화 별 스텟 추가
   @Post('create/step/:itemId')
   createStepItem(
     @Body() upsertStepDto: UpsertStepDto,
@@ -58,6 +59,7 @@ export class ItemAdminController {
     return this.itemAdminService.createStepItem(itemId, upsertStepDto);
   }
 
+  // 아이템 강화 별 스텟 수정
   @Post('update/step/:itemId')
   updateStepItem(
     @Body() upsertStepDto: UpsertStepDto,
@@ -66,6 +68,7 @@ export class ItemAdminController {
     return this.itemAdminService.updateStepItem(itemId, upsertStepDto);
   }
 
+  // 아이템 강화 별 스텟 삭제
   @Delete('delete/step/:stepId')
   deleteStepItem(
     @IntParam('stepId', '올바른 stepId를 입력해주세요') stepId: number,
@@ -73,16 +76,19 @@ export class ItemAdminController {
     return this.itemAdminService.deleteStepItem(stepId);
   }
 
+  // 아이템 강화 별 스텟 조회
   @Get('stats')
   getStatsId() {
     return this.itemAdminService.getStatsId();
   }
 
+  // 아이템 생성시 필요한 폼 정보
   @Get('basic-id')
   getBasicId() {
     return this.itemAdminService.getBasicId();
   }
 
+  // 아이템 삭제
   @Delete('delete/:itemId')
   deleteItem(
     @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,
@@ -90,6 +96,7 @@ export class ItemAdminController {
     return this.itemAdminService.deleteItem(itemId);
   }
 
+  // 아이템 레시피 조회
   @Post('recipe/:stepId')
   createRecipe(
     @IntParam('stepId', '올바른 stepId를 입력해주세요') stepId: number,
@@ -97,17 +104,4 @@ export class ItemAdminController {
   ) {
     return this.itemAdminService.upsertRecipe(stepId, upsertRecipeDto);
   }
-
-  /**
-   * --26.08.15 아이템 스탭 받아서 CRUD 처리하기
-   *
-   * 1. 레시피 CRUD
-   * - 프론트에서 레시피 추가 누르면 모든 장비 불러와서 거기서 아이템 ID와 수량
-   *   체크해서보내주기
-   *
-   * 2. 장비 세트 옵션 CRUD
-   * - 프론트에서 세트 옵션 추가 누르면 레벨과 세트 추가, 수정 가능하게 하기
-   *
-   * 3. 연마 CRUD
-   */
 }

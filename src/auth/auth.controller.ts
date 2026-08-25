@@ -22,6 +22,7 @@ import { RefreshAuthGuard } from './guards/refresh-token.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // 로그인
   @UseGuards(LocalAuthGuard)
   @Post('signin')
   async login(
@@ -40,6 +41,7 @@ export class AuthController {
     return { accessToken: access_token };
   }
 
+  // 리프레쉬 토큰 및 액세스 토큰 갱신
   @UseGuards(RefreshAuthGuard)
   @Post('refresh')
   async refresh(
@@ -48,8 +50,15 @@ export class AuthController {
   ) {
     try {
       const user = await this.authService.findUserByUserId(req.user.userId);
-      const { access_token } = await this.authService.signAccessToken(user);
-
+      const { access_token, refresh_token, expiresAt } =
+        await this.authService.signin(user);
+      res.cookie('refreshToken', refresh_token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        // sameSite: 'strict',
+        expires: expiresAt,
+        path: '/',
+      });
       return { accessToken: access_token };
     } catch (error) {
       res.clearCookie('refreshToken', {
@@ -63,6 +72,7 @@ export class AuthController {
     }
   }
 
+  // 회원 가입
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('signup')
@@ -70,7 +80,7 @@ export class AuthController {
     await this.authService.signup(signUpDto);
   }
 
-  // @UseGuards(JwtAuthGuard)
+  // 로그아웃
   @Post('signout')
   async signOut(
     @Req() req: AuthUser,

@@ -35,7 +35,7 @@ export class CharactersAdminService {
     createClassDto: CreateClassDto,
     image?: Express.Multer.File,
   ): Promise<CharacterClassResponseDto> {
-    this.logger.info({ className: createClassDto.name }, 'create class start');
+    this.logger.info({ class: createClassDto }, 'create class start');
     const findClass = await this.characterRepository.findOneClassByName(
       createClassDto.name,
     );
@@ -58,10 +58,7 @@ export class CharactersAdminService {
         `${createClassDto.name}의 생성에 실패했습니다.`,
       );
     }
-    this.logger.info(
-      { className: createClassDto.name },
-      'create class succeeded',
-    );
+    this.logger.info({ class: response }, 'create class succeeded');
     return plainToInstance(CharacterClassResponseDto, response);
   }
 
@@ -76,7 +73,7 @@ export class CharactersAdminService {
     classId: number,
     image?: Express.Multer.File,
   ) {
-    this.logger.info({ className: updateClassDto.name }, 'update class start');
+    this.logger.info({ class: updateClassDto }, 'update class start');
     const findClass = await this.characterRepository.findOneClass(classId);
 
     if (!findClass)
@@ -97,10 +94,7 @@ export class CharactersAdminService {
         await this.imageUploadService.deleteImage(findClass.image);
       }
 
-      this.logger.info(
-        { className: updateClassDto.name },
-        'update class succeeded',
-      );
+      this.logger.info({ class: updateClass }, 'update class succeeded');
       return updateClass;
     } catch (error) {
       if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);

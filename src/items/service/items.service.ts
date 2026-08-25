@@ -20,6 +20,11 @@ import { ItemMapper } from '../mapper/items-mapper';
 export class ItemService {
   constructor(private readonly itemRepository: ItemRepository) {}
 
+  /**
+   * 특정 아이템 조회
+   * @param id
+   * @returns
+   */
   async findItemById(id: number): Promise<ItemWithRelations> {
     const item = await this.itemRepository.findItemById(id);
 
@@ -29,6 +34,11 @@ export class ItemService {
     return ItemMapper.toItemDetail(item);
   }
 
+  /**
+   * 특정 아이템의 스텝 조회
+   * @param stepId
+   * @returns
+   */
   async findStepByStepId(stepId: number) {
     const item = await this.itemRepository.findStepByStepId(stepId);
 
@@ -42,6 +52,11 @@ export class ItemService {
     });
   }
 
+  /**
+   * 아이템 아이디로 자신의 모든 상세 스텟 조회
+   * @param itemId
+   * @returns
+   */
   async findStepByItemId(itemId: number) {
     const item = await this.itemRepository.findStepByItemId(itemId);
 
@@ -53,18 +68,31 @@ export class ItemService {
     return ItemMapper.toDetailStep(item);
   }
 
+  /**
+   * 모든 아이템 기본 조회
+   * @returns
+   */
   async findAllItems() {
     const items = await this.itemRepository.findAllItems();
     if (!items) throw new NotFoundException('아이템이 없습니다.');
     return items;
   }
 
+  /**
+   * 모든 아이템 상세 정보 조회
+   * @returns
+   */
   async findAllSteps() {
     const items = await this.itemRepository.findAllSteps();
     if (!items) throw new NotFoundException('아이템이 없습니다.');
     return items;
   }
 
+  /**
+   * 아이템 이름으로 조회
+   * @param itemName
+   * @returns
+   */
   async findItemByName(itemName: string) {
     const item = await this.itemRepository.findItemByName(itemName);
 
@@ -78,6 +106,11 @@ export class ItemService {
     });
   }
 
+  /**
+   * 카테고리로 아이템 조회
+   * @param searchItemDto
+   * @returns
+   */
   async findItemsByCategory(searchItemDto: SearchItemDto) {
     const { category } = searchItemDto;
     if (!category) throw new BadRequestException();
@@ -85,11 +118,19 @@ export class ItemService {
     return plainToInstance(ItemResponseDto, items);
   }
 
+  /**
+   * 모든 아이템 연마 정보 조회
+   * @returns
+   */
   async findGrindInfo() {
     const grinds = await this.itemRepository.findGrindInfo();
     return GrindMapper.toResponse(grinds);
   }
 
+  /**
+   * 모든 아이템 세트 옵션 조회
+   * @returns
+   */
   async findItemSetOption() {
     const itemSets = await this.itemRepository.findItemSetOption();
     if (itemSets.length === 0) {
@@ -98,6 +139,10 @@ export class ItemService {
     return ItemSetOptionMapper.toResponse(itemSets);
   }
 
+  /**
+   * 모든 아이템 레시피 조회
+   * @returns
+   */
   async getItemRecipe() {
     const recipes = await this.itemRepository.getItemRecipe();
 
@@ -105,10 +150,18 @@ export class ItemService {
     return sortRecipe(ItemRecipeMapper.toResponse(recipes));
   }
 
+  /**
+   * 이미지가 없는 아이템 조회
+   * @returns
+   */
   async getUnImage() {
     return await this.itemRepository.getUnImageItemsList();
   }
 
+  /**
+   * 아이템용 통계 정보 조회
+   * @returns
+   */
   findStatistics() {
     return this.itemRepository.findStatistics();
   }

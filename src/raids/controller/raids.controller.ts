@@ -1,4 +1,4 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import {
   RaidResponseDto,
   RaidTableResponseDto,
@@ -10,21 +10,19 @@ import { IntParam } from 'src/common/decorators/int.param';
 export class RaidsController {
   constructor(private readonly raidService: RaidService) {}
 
+  // 모든 레이드 조회
   @Get()
   findAll(): Promise<RaidResponseDto[]> {
     return this.raidService.findAllRaid();
   }
 
+  // 빠른전투 및 상한용 레이드 조회
   @Get('table')
   findTable(): Promise<RaidTableResponseDto[]> {
     return this.raidService.findTableRaid();
   }
 
-  @Post('drops')
-  addItemDrop() {
-    return;
-  }
-
+  // 레이드 상세 정보 조회
   @Get(':raidId')
   async findOneById(
     @IntParam('raidId', '올바른 RAID ID를 입력해주세요') raidId: number,

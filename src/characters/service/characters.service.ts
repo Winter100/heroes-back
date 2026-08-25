@@ -10,6 +10,10 @@ import { CharacterMapper } from '../mapper/Character.mapper';
 export class CharactersService {
   constructor(private readonly characterRepository: CharacterRepository) {}
 
+  /**
+   * 모든 캐릭터 정보
+   * @returns
+   */
   async findAllCharacter() {
     const characters = await this.characterRepository.findAllCharacter();
     if (!characters) throw new NotFoundException(`캐릭터 정보가 없습니다.`);
@@ -17,6 +21,10 @@ export class CharactersService {
     return CharacterMapper.toCharacterBasicAllResponse(characters);
   }
 
+  /**
+   * 모든 캐릭터 이미지
+   * @returns
+   */
   async getCharacterImage() {
     const characters = await this.characterRepository.getCharacterImage();
 
@@ -25,6 +33,11 @@ export class CharactersService {
     return characters;
   }
 
+  /**
+   * 특정 직업 상세 정보
+   * @param classId
+   * @returns
+   */
   async findOneDetailClass(classId: number) {
     if (!classId) throw new BadRequestException('직업 아이디를 확인해주세요.');
 
@@ -37,9 +50,10 @@ export class CharactersService {
 
   /**
    * 통계
-   *
-   * @returns 1. 성별
-   *
+   * @returns
+   * 1. 등록된 직업수
+   * 2. 성별 수
+   * 3. 연도별 출시 캐릭터 수
    */
   async findStatistics() {
     const [total, characters, genderCount] = await Promise.all([
@@ -53,6 +67,10 @@ export class CharactersService {
     return { total, year, genderCount: gCount };
   }
 
+  /**
+   * 성별 카운트 [헬퍼]
+   * @returns
+   */
   async countGender() {
     const count = await this.characterRepository.countGender();
     if (!count) throw new NotFoundException(`카운트 정보가 없습니다.`);

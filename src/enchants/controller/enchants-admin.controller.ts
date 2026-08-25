@@ -56,6 +56,7 @@ export class EnchantsAdminController {
     );
   }
 
+  // 인챈트 삭제
   @Delete('delete/:enchantId')
   deleteEnchant(
     @IntParam('enchantId', '올바른 ENCHANT ID가 필요합니다') enchantId: number,
@@ -63,13 +64,9 @@ export class EnchantsAdminController {
     return this.enchantAdminService.deleteEnchant(enchantId);
   }
 
+  // 인챈트 생성 폼에 필요한 데이터
   @Get('form')
   getEnchantFormData() {
     return this.enchantAdminService.getEnchantFormData();
   }
-
-  // @Post('drop')
-  // createDropRaid(@Body() enchantDropCreateDto: EnchantDropCreateDto) {
-  //   return this.enchantAdminService.updateEnchant(enchantDropCreateDto);
-  // }
 }

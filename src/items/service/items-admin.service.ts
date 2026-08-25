@@ -27,6 +27,12 @@ export class ItemAdminService {
     private readonly itemService: ItemService,
   ) {}
 
+  /**
+   * 아이템 기본 생성
+   * @param createItemDto
+   * @param image
+   * @returns
+   */
   async createItem(createItemDto: CreateItemDto, image?: Express.Multer.File) {
     this.logger.info({ itemName: createItemDto.name }, 'create item start');
     const imageUrl: string | undefined = image
@@ -52,6 +58,13 @@ export class ItemAdminService {
     }
   }
 
+  /**
+   * 아이템 기본 정보 수정
+   * @param itemId
+   * @param updateItemDto
+   * @param image
+   * @returns
+   */
   async updateItem(
     itemId: number,
     updateItemDto: UpdateItemDto,
@@ -94,6 +107,12 @@ export class ItemAdminService {
     }
   }
 
+  /**
+   * 아이템 상세 정보 생성
+   * @param itemId
+   * @param createStepDto
+   * @returns
+   */
   async createStepItem(itemId: number, createStepDto: UpsertStepDto) {
     this.logger.info(
       { itemId, stepid: createStepDto?.stepId },
@@ -118,6 +137,12 @@ export class ItemAdminService {
     return { message: `${findItem.name} 아이템 강화 등록 성공` };
   }
 
+  /**
+   * 아이템 상세 정보 수정
+   * @param itemId
+   * @param updateStepDto
+   * @returns
+   */
   async updateStepItem(itemId: number, updateStepDto: UpsertStepDto) {
     this.logger.info(
       { itemId, stepid: updateStepDto?.stepId },
@@ -144,6 +169,11 @@ export class ItemAdminService {
     return { message: `${updateStepDto.stepId} 아이템 강화 수정 성공` };
   }
 
+  /**
+   * 아이템 상세 강화 정보 삭제
+   * @param stepId
+   * @returns
+   */
   async deleteStepItem(stepId: number) {
     this.logger.info({ stepId }, 'delete step item start');
     await this.itemRepository.deleteStep(stepId);
@@ -151,10 +181,18 @@ export class ItemAdminService {
     return { message: `${stepId} 아이템 강화 삭제 성공` };
   }
 
+  /**
+   * 모든 아이템 스텟 조회
+   * @returns
+   */
   getStatsId() {
     return this.itemRepository.getStatsId();
   }
 
+  /**
+   * 아이템 생성시 필요한 폼 정보
+   * @returns
+   */
   async getBasicId() {
     const [category, tier, slot] = await Promise.all([
       this.itemRepository.getCategory(),
@@ -165,6 +203,11 @@ export class ItemAdminService {
     return { category, tier, slot };
   }
 
+  /**
+   * 기본 아이템 삭제
+   * @param itemId
+   * @returns
+   */
   async deleteItem(itemId: number) {
     this.logger.info({ itemId }, 'delete item start');
     const findItem = await this.itemService.findItemById(itemId);
@@ -181,6 +224,12 @@ export class ItemAdminService {
     return { message: '아이템이 성공적으로 삭제되었습니다.' };
   }
 
+  /**
+   * 아이템 제작 레시피 변경
+   * @param stepId
+   * @param upsertRecipeDto
+   * @returns
+   */
   async upsertRecipe(stepId: number, upsertRecipeDto: UpsertRecipeDto) {
     this.logger.info({ stepId }, 'upsert recipe start');
     await this.itemService.findStepByStepId(stepId);

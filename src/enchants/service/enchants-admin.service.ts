@@ -23,6 +23,11 @@ export class EnchantAdminService {
     private readonly enchantService: EnchantService,
   ) {}
 
+  /**
+   * 기본 인챈트 생성
+   * @param createEnchantDto
+   * @returns
+   */
   createEnchant(createEnchantDto: CreateEnchantDto) {
     this.logger.info(
       { enchant: createEnchantDto.name },
@@ -42,6 +47,12 @@ export class EnchantAdminService {
     return this.enchantRepository.createEnchant(createData);
   }
 
+  /**
+   * 기본 인챈트 정보 수정
+   * @param enchantId
+   * @param updateEnchantDto
+   * @returns
+   */
   async updateEnchant(enchantId: number, updateEnchantDto: UpdateEnchantDto) {
     this.logger.info(
       { enchantId: enchantId, updateName: updateEnchantDto.name },
@@ -74,6 +85,13 @@ export class EnchantAdminService {
     return this.enchantRepository.updateEnchant(enchantId, updateData);
   }
 
+  /**
+   * 인챈트 상세 정보 수정
+   * - 효과
+   * @param enchantId
+   * @param upsertEnchantDetailDto
+   * @returns
+   */
   async upsertEnchant(
     enchantId: number,
     upsertEnchantDetailDto: UpsertEnchantDetailDto,
@@ -114,6 +132,12 @@ export class EnchantAdminService {
     );
     return this.enchantRepository.upsertEnchant(enchantId, upsertData);
   }
+
+  /**
+   * 인챈트 삭제
+   * @param enchantId
+   * @returns
+   */
   async deleteEnchant(enchantId: number) {
     this.logger.info({ enchantId }, 'delete enchant start');
     const deleted = await this.enchantRepository.deleteEnchant(enchantId);
@@ -121,6 +145,10 @@ export class EnchantAdminService {
     return deleted;
   }
 
+  /**
+   * 인챈트 생성에 필요한 정보
+   * @returns
+   */
   async getEnchantFormData() {
     const [basic, stats] = await Promise.all([
       this.itemAdminService.getBasicId(),
@@ -129,6 +157,10 @@ export class EnchantAdminService {
     return { slot: basic.slot, stats };
   }
 
+  /**
+   * 인챈트 드랍 조회
+   * @returns
+   */
   async findEnchantDrop(): Promise<EnchantDropResponseDto[]> {
     const enchants = await this.enchantRepository.findAllWithRelations();
 
@@ -141,6 +173,10 @@ export class EnchantAdminService {
     );
   }
 
+  /**
+   * 모든 인챈트 가격 조회
+   * @returns
+   */
   async findAllPrice() {
     try {
       const enchantPriceList = await this.nexonService.getEnchantPrice();

@@ -5,23 +5,27 @@ import { StatisticsService } from './statistics.service';
 export class StatisticsController {
   constructor(private readonly statisticsService: StatisticsService) {}
 
+  // 캐릭터 통계
   @Get('character')
   statisticsCharacter() {
-    return this.statisticsService.character();
+    return this.statisticsService.getCharacterStats();
   }
 
+  // 인챈트 통계
   @Get('enchant')
   statisticsEnchant() {
-    return this.statisticsService.enchant();
+    return this.statisticsService.getEnchantStats();
   }
 
+  // 레이드 통계
   @Get('raid')
   statisticsRaid() {
-    return this.statisticsService.raid();
+    return this.statisticsService.getRaidStats();
   }
 
+  // 아이템 통계
   @Get('item')
   statisticsItem() {
-    return this.statisticsService.item();
+    return this.statisticsService.getItemStats();
   }
 }
