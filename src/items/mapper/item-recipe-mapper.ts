@@ -1,8 +1,11 @@
-import { ItemRecipeWithRelations } from '../repository/item.repository';
+import {
+  ItemRecipeDetailWithRelations,
+  ItemRecipeTableWithRelations,
+} from '../repository/item-validator';
+import { ItemRecipeSSGWithRelations } from '../repository/item.repository';
 
-// 아이템 내부에도 슬롯 또는 연결된 "와드네 발 방어구" 같은게 필요함.
 export class ItemRecipeMapper {
-  static toResponse(recipes: ItemRecipeWithRelations[]) {
+  static toResponse(recipes: ItemRecipeTableWithRelations[]) {
     return recipes.map((recipe) => {
       const itemName = combineItemNameAndLevel(
         recipe.item.name,
@@ -22,6 +25,7 @@ export class ItemRecipeMapper {
       );
 
       return {
+        id: recipe.id.toString(),
         name: itemName,
         level: recipe.stepName,
         image: recipe.item?.image,
@@ -31,6 +35,7 @@ export class ItemRecipeMapper {
         category: recipe.item.category.name,
         tier: recipe.item.tier.name,
         description: recipe.item.description,
+        material_count: recipe.recipesAsResult.length,
         sets: recipe.item.itemSetList.map((set) => {
           return {
             set_name: set.set.name,
@@ -43,52 +48,102 @@ export class ItemRecipeMapper {
             set_options: convertSetOptions(set.set.itemSetBonus),
           };
         }),
-        materials: recipe.recipesAsResult.map((material) => {
-          const materialName = combineItemNameAndLevel(
-            material.materialStep?.item.name,
-            material.materialStep?.stepName,
-          );
-
-          const materialeffects = material.materialStep?.stats.map((stat) => ({
-            stat_name: stat.stat.name,
-            stat_value: stat.value,
-          }));
-
-          const materialgrinds = convertToGrindResponse(
-            material.materialStep?.item?.name,
-            material.materialStep?.item?.itemGrind,
-            materialName,
-            materialeffects,
-          );
-
-          return {
-            name: materialName,
-            level: material.materialStep?.stepName,
-            image: material.materialStep?.item?.image,
-            option: material.description,
-            effects: materialeffects,
-            grinds: materialgrinds,
-            description: material.materialStep?.item?.description,
-            sets: material.materialStep?.item.itemSetList.map((set) => {
-              return {
-                set_name: set.set.name,
-                title: set.item.name,
-                set_title: set.set.itemSetList.map((item) => item.item.name),
-                slots: set.set.itemSetSlotList.map((slot) => ({
-                  name: slot.slot.name,
-                  value: slot.slot.value,
-                })),
-                set_options: convertSetOptions(set.set.itemSetBonus),
-              };
-            }),
-            category: material.materialStep?.item?.category.name,
-            tier: material.materialStep?.item?.tier.name,
-            slot: material.materialStep?.item?.slot,
-            quantity: material.quantity,
-          };
-        }),
       };
     });
+  }
+
+  static toSSGResponse(recipes: ItemRecipeSSGWithRelations[]) {
+    return recipes.map((recipe) => {
+      return {
+        id: recipe.id,
+      };
+    });
+  }
+
+  static toOneResponse(recipe: ItemRecipeDetailWithRelations) {
+    const itemName = combineItemNameAndLevel(recipe.item.name, recipe.stepName);
+
+    const effects = recipe.stats.map((stat) => ({
+      stat_name: stat.stat.name,
+      stat_value: stat.value,
+    }));
+
+    const grinds = convertToGrindResponse(
+      recipe.item?.name,
+      recipe.item?.itemGrind,
+      itemName,
+      effects,
+    );
+
+    return {
+      name: itemName,
+      level: recipe.stepName,
+      image: recipe.item?.image,
+      slot: recipe.item?.slot,
+      effects,
+      grinds,
+      category: recipe.item.category.name,
+      tier: recipe.item.tier.name,
+      description: recipe.item.description,
+      sets: recipe.item.itemSetList.map((set) => {
+        return {
+          set_name: set.set.name,
+          title: set.item.name,
+          set_title: set.set.itemSetList.map((item) => item.item.name),
+          slots: set.set.itemSetSlotList.map((slot) => ({
+            name: slot.slot.name,
+            value: slot.slot.value,
+          })),
+          set_options: convertSetOptions(set.set.itemSetBonus),
+        };
+      }),
+      materials: recipe.recipesAsResult.map((material) => {
+        const materialName = combineItemNameAndLevel(
+          material.materialStep?.item.name,
+          material.materialStep?.stepName,
+        );
+
+        const materialeffects = material.materialStep?.stats.map((stat) => ({
+          stat_name: stat.stat.name,
+          stat_value: stat.value,
+        }));
+
+        const materialgrinds = convertToGrindResponse(
+          material.materialStep?.item?.name,
+          material.materialStep?.item?.itemGrind,
+          materialName,
+          materialeffects,
+        );
+
+        return {
+          materialId: material.materialStep.id,
+          name: materialName,
+          hasRecipe: material.materialStep._count.recipesAsResult > 0,
+          level: material.materialStep?.stepName,
+          image: material.materialStep?.item?.image,
+          option: material.description,
+          effects: materialeffects,
+          grinds: materialgrinds,
+          description: material.materialStep?.item?.description,
+          sets: material.materialStep?.item.itemSetList.map((set) => {
+            return {
+              set_name: set.set.name,
+              title: set.item.name,
+              set_title: set.set.itemSetList.map((item) => item.item.name),
+              slots: set.set.itemSetSlotList.map((slot) => ({
+                name: slot.slot.name,
+                value: slot.slot.value,
+              })),
+              set_options: convertSetOptions(set.set.itemSetBonus),
+            };
+          }),
+          category: material.materialStep?.item?.category.name,
+          tier: material.materialStep?.item?.tier.name,
+          slot: material.materialStep?.item?.slot,
+          quantity: material.quantity,
+        };
+      }),
+    };
   }
 }
 
@@ -117,7 +172,7 @@ type GrindItemValueResponse = {
   stat_one_value: number;
   stat_max_value: number;
   stat_value: number;
-  one_ingredient: {
+  one_ingredient?: {
     name: string;
     image: string;
     quantity: number;
@@ -132,7 +187,7 @@ export type RawGrindInput = {
     stat: { name: string };
     statOneValue: number;
     statMaxValue: number;
-    grindIngredient: {
+    grindIngredient?: {
       quantity: number;
       item: { name: string; image: string | null };
     }[];
@@ -152,7 +207,7 @@ function convertToGrindResponse(
     const currentSlots = grind.grindSlot.map((gs) => gs.slot.value);
     const slotKey = [...currentSlots].sort().join(',');
 
-    const formattedIngredients = grind.grindIngredient.map((ing) => ({
+    const formattedIngredients = grind?.grindIngredient?.map((ing) => ({
       name: ing.item.name,
       image: ing.item.image ?? '',
       quantity: ing.quantity,

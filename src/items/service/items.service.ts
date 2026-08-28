@@ -140,14 +140,38 @@ export class ItemService {
   }
 
   /**
-   * 모든 아이템 레시피 조회
+   * 모든 아이템 레시피 테이블 조회
    * @returns
    */
-  async getItemRecipe() {
-    const recipes = await this.itemRepository.getItemRecipe();
+  async getItemRecipeTable() {
+    const recipes = await this.itemRepository.findItemRecipeTable();
 
     if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
     return sortRecipe(ItemRecipeMapper.toResponse(recipes));
+  }
+
+  /**
+   * 프론트엔드 SSG용 STEP ID 및 아이템 이름
+   * @returns
+   */
+  async getItemRecipeSSG() {
+    const recipes = await this.itemRepository.findItemRecipeSSG();
+
+    if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
+    return ItemRecipeMapper.toSSGResponse(recipes);
+  }
+
+  /**
+   * 특정 아이템 레시피 조회
+   * @returns
+   */
+  async getItemRecipeByStepId(stepId: number) {
+    const recipe = await this.itemRepository.findItemRecipeByStepId(stepId);
+    console.log('recipe', recipe);
+
+    if (!recipe) throw new NotFoundException('레시피가 없습니다.');
+
+    return ItemRecipeMapper.toOneResponse(recipe);
   }
 
   /**

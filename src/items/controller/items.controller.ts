@@ -44,11 +44,27 @@ export class ItemController {
     return this.itemService.findItemSetOption();
   }
 
-  @Get('recipe')
-  getItemRecipe() {
-    return this.itemService.getItemRecipe();
+  // 프론트엔드 SSG용 레시피 ID 조회
+  @Get('recipe/ssg')
+  getItemRecipeSSG() {
+    return this.itemService.getItemRecipeSSG();
   }
 
+  // 모든 레시피 테이블 조회
+  @Get('recipe')
+  getItemRecipeTable() {
+    return this.itemService.getItemRecipeTable();
+  }
+
+  // 개별 레시피 조회
+  @Get('recipe/:stepId')
+  getItemRecipeByStepId(
+    @IntParam('stepId', '올바른 STEPID를 입력해주세요') stepId: number,
+  ) {
+    return this.itemService.getItemRecipeByStepId(stepId);
+  }
+
+  // 아이템의 모든 STEP 조회
   @Get('step/:itemId')
   findStepByItemId(
     @IntParam('itemId', '올바른 아이템 ID를 입력해주세요') itemId: number,

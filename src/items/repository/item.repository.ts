@@ -1,4 +1,8 @@
 import {
+  itemRecipeDetailSelect,
+  itemRecipeTableSelect,
+} from './item-validator';
+import {
   Effects,
   UpsertRecipeDto,
   UpsertStepDto,
@@ -278,10 +282,25 @@ export class ItemRepository {
     });
   }
 
-  async getItemRecipe() {
+  // 아이템 레시피 테이블 조회
+  async findItemRecipeTable() {
     return await this.prismaService.equipmentStep.findMany({
       where: itemRecipeFilter,
-      select: itemRecipeWithRelationsSelect,
+      select: itemRecipeTableSelect,
+    });
+  }
+
+  async findItemRecipeSSG() {
+    return await this.prismaService.equipmentStep.findMany({
+      where: itemRecipeFilter,
+      select: itemRecipeSSGWithRelationsSelect,
+    });
+  }
+
+  async findItemRecipeByStepId(stepId: number) {
+    return await this.prismaService.equipmentStep.findUnique({
+      where: { id: stepId },
+      select: itemRecipeDetailSelect,
     });
   }
 
@@ -439,243 +458,12 @@ const itemRecipeFilter: Prisma.EquipmentStepWhereInput = {
     some: {},
   },
 };
-export const itemRecipeWithRelationsSelect =
+
+export const itemRecipeSSGWithRelationsSelect =
   Prisma.validator<Prisma.EquipmentStepSelect>()({
-    stepName: true,
-    stats: {
-      select: {
-        stat: {
-          select: {
-            name: true,
-          },
-        },
-        value: true,
-      },
-    },
-    item: {
-      select: {
-        name: true,
-        image: true,
-        description: true,
-        category: {
-          select: {
-            name: true,
-          },
-        },
-        tier: {
-          select: {
-            name: true,
-          },
-        },
-        slot: true,
-        itemSetList: {
-          select: {
-            item: {
-              select: {
-                name: true, // 아이템이 갖게되는 대표 타이틀 1개 ("밀레시안 무기", "오르나 무기" 등등)
-              },
-            },
-            setId: true,
-            set: {
-              select: {
-                id: true,
-                name: true,
-                itemSetList: {
-                  select: {
-                    item: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                  },
-                },
-                itemSetSlotList: {
-                  select: {
-                    slot: {
-                      select: {
-                        name: true,
-                        value: true,
-                      },
-                    },
-                  },
-                },
-                itemSetBonus: {
-                  select: {
-                    level: true,
-                    stat: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                    statValue: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        itemGrind: {
-          select: {
-            grind: {
-              select: {
-                title: {
-                  select: {
-                    name: true,
-                  },
-                },
-                grindSlot: {
-                  select: {
-                    slot: true,
-                  },
-                },
-                stat: {
-                  select: {
-                    name: true,
-                  },
-                },
-                statOneValue: true,
-                statMaxValue: true,
-                grindIngredient: {
-                  select: {
-                    quantity: true,
-                    item: {
-                      select: {
-                        name: true,
-                        image: true,
-                        slot: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    recipesAsResult: {
-      select: {
-        quantity: true,
-        description: true,
-        materialStep: {
-          select: {
-            stepName: true,
-            stats: {
-              select: {
-                stat: {
-                  select: {
-                    name: true,
-                  },
-                },
-                value: true,
-              },
-            },
-            item: {
-              select: {
-                name: true,
-                image: true,
-                description: true,
-                category: {
-                  select: {
-                    name: true,
-                  },
-                },
-                tier: {
-                  select: {
-                    name: true,
-                  },
-                },
-                slot: true,
-                itemSetList: {
-                  select: {
-                    item: {
-                      select: {
-                        name: true,
-                      },
-                    },
-                    set: {
-                      select: {
-                        id: true,
-                        name: true,
-                        itemSetList: {
-                          select: {
-                            item: {
-                              select: {
-                                name: true,
-                              },
-                            },
-                          },
-                        },
-                        itemSetSlotList: {
-                          select: {
-                            slot: {
-                              select: {
-                                name: true,
-                                value: true,
-                              },
-                            },
-                          },
-                        },
-                        itemSetBonus: {
-                          select: {
-                            level: true,
-                            stat: {
-                              select: {
-                                name: true,
-                              },
-                            },
-                            statValue: true,
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-                itemGrind: {
-                  select: {
-                    grind: {
-                      select: {
-                        title: {
-                          select: {
-                            name: true,
-                          },
-                        },
-                        grindSlot: {
-                          select: {
-                            slot: true,
-                          },
-                        },
-                        stat: {
-                          select: {
-                            name: true,
-                          },
-                        },
-                        statOneValue: true,
-                        statMaxValue: true,
-                        grindIngredient: {
-                          select: {
-                            quantity: true,
-                            item: {
-                              select: {
-                                name: true,
-                                image: true,
-                                slot: true,
-                              },
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
+    id: true,
   });
 
-export type ItemRecipeWithRelations = Prisma.EquipmentStepGetPayload<{
-  select: typeof itemRecipeWithRelationsSelect;
+export type ItemRecipeSSGWithRelations = Prisma.EquipmentStepGetPayload<{
+  select: typeof itemRecipeSSGWithRelationsSelect;
 }>;
