@@ -22,6 +22,7 @@ import { randomUUID } from 'node:crypto';
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { GlobalExceptionFilter } from './all-exceptions.filter';
 import { APP_FILTER } from '@nestjs/core';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -93,21 +94,6 @@ import { APP_FILTER } from '@nestjs/core';
         },
       },
     }),
-    // ThrottlerModule.forRootAsync({
-    //   imports: [ConfigModule],
-    //   inject: [ConfigService],
-    //   useFactory: (configService: ConfigService) => ({
-    //     throttlers: [
-    //       {
-    //         ttl: 60000,
-    //         limit: 5000,
-    //       },
-    //     ],
-    //     storage: new ThrottlerStorageRedisService(
-    //       new Redis(configService.get<string>('UPSTASH_REDIS_URL')!),
-    //     ),
-    //   }),
-    // }),
     PrismaModule,
     SupabaseModule,
     RaidsModule,
@@ -121,6 +107,7 @@ import { APP_FILTER } from '@nestjs/core';
     NoticeModule,
     NexonModule,
     StatisticsModule,
+    RedisModule,
   ],
   controllers: [],
   providers: [
@@ -128,10 +115,6 @@ import { APP_FILTER } from '@nestjs/core';
       provide: APP_FILTER,
       useClass: GlobalExceptionFilter,
     },
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard,
-    // },
   ],
 })
 export class AppModule {}

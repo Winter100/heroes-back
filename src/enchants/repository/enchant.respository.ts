@@ -35,35 +35,30 @@ export class EnchantRepository {
     return this.prismaService.enchant.delete({ where: { id: enchantId } });
   }
 
-  async findEnchantByName(name: string) {
-    return await this.prismaService.enchant.findUnique({
-      where: {
-        name,
+  async getEnchantSSG() {
+    return await this.prismaService.enchant.findMany({
+      select: {
+        id: true,
+        name: true,
       },
     });
   }
+
   async findEnchantById(id: number) {
     return await this.prismaService.enchant.findUnique({
       where: {
         id,
       },
-      select: {
-        id: true,
-        name: true,
-        affix: true,
-        affixId: true,
-        rankId: true,
-        tierId: true,
-        effects: {
-          select: {
-            statId: true,
-            value: true,
-          },
-        },
-        enchantSlot: {
-          select: { slotId: true },
-        },
+      select: enchantWithRelationsSelect,
+    });
+  }
+
+  async findEnchantByName(name: string) {
+    return await this.prismaService.enchant.findUnique({
+      where: {
+        name,
       },
+      select: enchantWithRelationsSelect,
     });
   }
 

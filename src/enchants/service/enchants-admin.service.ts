@@ -11,6 +11,8 @@ import { aggregateByEnchantPreset } from '../util/enchant-util';
 import { Prisma } from '@prisma/client';
 import { ItemAdminService } from 'src/items/service/items-admin.service';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { RedisService } from 'src/redis/redis.service';
+import { RedisKeys } from 'src/redis/redis-keys.constant';
 
 @Injectable()
 export class EnchantAdminService {
@@ -21,6 +23,7 @@ export class EnchantAdminService {
     private readonly nexonService: NexonService,
     private readonly itemAdminService: ItemAdminService,
     private readonly enchantService: EnchantService,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
@@ -58,7 +61,10 @@ export class EnchantAdminService {
       { enchantId: enchantId, updateName: updateEnchantDto.name },
       'update enchant start',
     );
-    await this.enchantService.findEnchantById(enchantId);
+    await this.enchantService.findEnchantOneBy({
+      enchant: enchantId,
+      order: 'id',
+    });
     const updateData: Prisma.EnchantUpdateInput = {};
 
     if (updateEnchantDto.name) {
@@ -97,7 +103,10 @@ export class EnchantAdminService {
     upsertEnchantDetailDto: UpsertEnchantDetailDto,
   ) {
     this.logger.info({ enchantId: enchantId }, 'upsert detail enchant start');
-    await this.enchantService.findEnchantById(enchantId);
+    await this.enchantService.findEnchantOneBy({
+      enchant: enchantId,
+      order: 'id',
+    });
 
     const upsertData: Prisma.EnchantUpdateInput = {};
     if (upsertEnchantDetailDto?.slotsId) {
@@ -185,5 +194,17 @@ export class EnchantAdminService {
     } catch {
       return [];
     }
+  }
+
+  async resetCache() {
+    this.logger.info(
+      { key: RedisKeys.enchantList() },
+      'redis reset cache start',
+    );
+    await this.redisService.delete(RedisKeys.enchantList());
+    this.logger.info(
+      { key: RedisKeys.enchantList() },
+      'redis reset cache succeeded',
+    );
   }
 }

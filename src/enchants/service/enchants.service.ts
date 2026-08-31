@@ -9,24 +9,27 @@ import { EnchantTransformer } from '../enchant-transformer';
 import { EnchantDropCreateDto } from '../dto/enchant-drop-create.dto';
 import { EnchantCategory } from '@prisma/client';
 import { EnchantMapper } from 'src/items/mapper/enchant-mapper';
-import { aggregateByEnchantPreset } from '../util/enchant-util';
+import {
+  aggregateByEnchantPreset,
+  convertPriceMap,
+  mergeEnchantPriceServer,
+} from '../util/enchant-util';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class EnchantService {
   constructor(
     private readonly enchantRepository: EnchantRepository,
     private readonly nexonService: NexonService,
+    private readonly redisService: RedisService,
   ) {}
-
   async findAllEnchant(
     category: EnchantCategory = EnchantCategory.ENCHANT,
   ): Promise<EnchantResponseDto[]> {
-    const enchants =
+    const entities =
       await this.enchantRepository.findAllWithRelations(category);
 
-    if (!enchants) return [];
-
-    return EnchantMapper.toResponse(enchants);
+    return entities.map((enchant) => EnchantMapper.toResponse(enchant));
   }
 
   async findEnchantDrop(): Promise<EnchantDropResponseDto[]> {
@@ -41,10 +44,21 @@ export class EnchantService {
     );
   }
 
-  async findEnchantById(enchantId: number) {
-    const enchant = await this.enchantRepository.findEnchantById(enchantId);
-    if (!enchant) throw new NotFoundException('인챈트가 존재하지 않습니다');
-    return enchant;
+  async findEnchantOneBy(
+    params:
+      | { enchant: number; order: 'id' }
+      | { enchant: string; order: 'name' },
+  ) {
+    const result =
+      params.order === 'id'
+        ? await this.enchantRepository.findEnchantById(params.enchant)
+        : await this.enchantRepository.findEnchantByName(params.enchant);
+
+    if (!result) {
+      throw new NotFoundException('인챈트가 존재하지 않습니다');
+    }
+
+    return EnchantMapper.toResponse(result);
   }
 
   async updateEnchant(enchantDropCreateDto: EnchantDropCreateDto) {
@@ -59,6 +73,25 @@ export class EnchantService {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * 프론트엔드 SSG용 인챈트 아이디 및 이름
+   * @returns
+   */
+  async getEnchantSSG() {
+    return await this.enchantRepository.getEnchantSSG();
+  }
+
+  async getEnchantTable() {
+    const [enchants, enchantPrice] = await Promise.all([
+      this.findAllEnchant(),
+      this.findAllPrice(),
+    ]);
+
+    const enchantPriceMap = convertPriceMap(enchantPrice);
+
+    return mergeEnchantPriceServer(enchants, enchantPriceMap);
   }
 
   /**

@@ -15,6 +15,12 @@ import { RolesGuard } from 'src/common/guards/roles.guard';
 export class EnchantsAdminController {
   constructor(private readonly enchantAdminService: EnchantAdminService) {}
 
+  // 인챈트 생성 폼에 필요한 데이터
+  @Get('form')
+  getEnchantFormData() {
+    return this.enchantAdminService.getEnchantFormData();
+  }
+
   /**
    * 기본 인챈트 생성
    * @param createEnchantDto
@@ -62,11 +68,5 @@ export class EnchantsAdminController {
     @IntParam('enchantId', '올바른 ENCHANT ID가 필요합니다') enchantId: number,
   ) {
     return this.enchantAdminService.deleteEnchant(enchantId);
-  }
-
-  // 인챈트 생성 폼에 필요한 데이터
-  @Get('form')
-  getEnchantFormData() {
-    return this.enchantAdminService.getEnchantFormData();
   }
 }

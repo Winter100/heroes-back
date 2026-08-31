@@ -1,3 +1,4 @@
+import { EnchantResponseDto } from '../dto/enchant-response.dto';
 import {
   EnchantFormatingType,
   ItemPriceType,
@@ -60,3 +61,26 @@ function extractEnchantInfo(itemOption: ItemPriceType['item_option']) {
 
   return null;
 }
+
+export const convertPriceMap = (priceData: EnchantFormatingType[]) => {
+  if (!priceData) {
+    return new Map<string, EnchantFormatingType>();
+  }
+
+  return new Map<string, EnchantFormatingType>(
+    priceData.map((price) => [price.item_name, price]),
+  );
+};
+
+export const mergeEnchantPriceServer = (
+  enchants: EnchantResponseDto[],
+  priceMap: Map<string, EnchantFormatingType>,
+) => {
+  return enchants.map((item) => {
+    const priceInfo = priceMap.get(item.name);
+    return {
+      ...item,
+      ...priceInfo,
+    };
+  });
+};
