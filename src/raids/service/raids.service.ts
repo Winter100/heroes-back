@@ -22,14 +22,20 @@ export class RaidService {
   }
 
   /**
-   * 레이드 아이디로 조회
+   * 레이드 아이디 또는 전투명으로 조회
    * @param raidId
    * @returns
    */
-  async findOneById(raidId: number) {
-    const dbRaid = await this.raidRepository.findRaidById(raidId);
-    if (!dbRaid) throw new NotFoundException('레이드 정보 조회 에러');
-    return RaidMapper.toBasicResponse(dbRaid);
+  async findByOneRaid(
+    param: { raid: number; order: 'id' } | { raid: string; order: 'name' },
+  ) {
+    const raid =
+      param.order === 'id'
+        ? await this.raidRepository.findRaidById(param.raid)
+        : await this.raidRepository.findRaidByName(param.raid);
+
+    if (!raid) throw new NotFoundException('레이드 정보 조회 에러');
+    return RaidMapper.toBasicResponse(raid);
   }
 
   /**
@@ -41,6 +47,18 @@ export class RaidService {
 
     const response = RaidMapper.toRaidTableResponse(dbRaid);
     return raidSort(response);
+  }
+
+  async getRaidSSG() {
+    const raids = await this.findTableRaid();
+
+    const filteredData = raids.filter((raid) => raid.raid_name !== '미분류');
+
+    const names = [
+      ...new Set(filteredData.flatMap((m) => m.monsters.map((r) => r.battle))),
+    ];
+
+    return names;
   }
 
   /**

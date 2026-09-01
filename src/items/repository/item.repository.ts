@@ -462,6 +462,12 @@ const itemRecipeFilter: Prisma.EquipmentStepWhereInput = {
 export const itemRecipeSSGWithRelationsSelect =
   Prisma.validator<Prisma.EquipmentStepSelect>()({
     id: true,
+    stepName: true,
+    item: {
+      select: {
+        name: true,
+      },
+    },
   });
 
 export type ItemRecipeSSGWithRelations = Prisma.EquipmentStepGetPayload<{

@@ -35,6 +35,14 @@ export class RaidRepository {
       select: raidWithRelationsSelect,
     });
   }
+  async findRaidByName(battle: string) {
+    return await this.prisma.raid.findUnique({
+      where: {
+        battle,
+      },
+      select: raidWithRelationsSelect,
+    });
+  }
 
   upsertRaidDetil(raidId: number, data: Prisma.RaidUpdateInput) {
     return this.prisma.raid.update({ where: { id: raidId }, data });

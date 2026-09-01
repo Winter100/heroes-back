@@ -56,6 +56,10 @@ export class ItemRecipeMapper {
     return recipes.map((recipe) => {
       return {
         id: recipe.id,
+        name:
+          recipe.stepName === '0'
+            ? recipe.item.name
+            : `${recipe.stepName} ${recipe.item.name}`,
       };
     });
   }

@@ -167,7 +167,6 @@ export class ItemService {
    */
   async getItemRecipeByStepId(stepId: number) {
     const recipe = await this.itemRepository.findItemRecipeByStepId(stepId);
-    console.log('recipe', recipe);
 
     if (!recipe) throw new NotFoundException('레시피가 없습니다.');
 
