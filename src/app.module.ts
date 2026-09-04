@@ -9,13 +9,9 @@ import { SupabaseModule } from './supabase/supabase.module';
 import { ConfigModule } from '@nestjs/config';
 import { ItemsModule } from './items/items.module';
 import { PartholnModule } from './partholn/partholn.module';
-// import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
-// import Redis from 'ioredis';
-// import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { HealthModule } from './health/health.module';
 import { NoticeModule } from './notice/notice.module';
 import { NexonModule } from './nexon/nexon.module';
-// import { APP_GUARD } from '@nestjs/core';
 import { StatisticsModule } from './statistics/statistics.module';
 import { LoggerModule } from 'nestjs-pino';
 import { randomUUID } from 'node:crypto';
@@ -36,45 +32,86 @@ import { RedisModule } from './redis/redis.module';
         genReqId: (req, res) => {
           const existingId = req.headers['x-request-id'];
 
-          const id =
-            typeof existingId === 'string' && existingId.length > 0
-              ? existingId
-              : randomUUID();
+          const isValidRequestId =
+            typeof existingId === 'string' &&
+            existingId.length <= 128 &&
+            /^[a-zA-Z0-9._:-]+$/.test(existingId);
 
-          res.setHeader('X-Request-Id', id);
+          const requestId = isValidRequestId ? existingId : randomUUID();
 
-          return id;
+          res.setHeader('X-Request-Id', requestId);
+
+          return requestId;
         },
 
         serializers: {
           req: (req: IncomingMessage & { id?: string }) => ({
-            reqId: req.id,
+            id: req.id,
             method: req.method,
             url: req.url,
+            ip: req.headers['x-forwarded-for'] ?? req.socket?.remoteAddress,
+            userAgent: req.headers['user-agent'],
           }),
           res: (res: ServerResponse) => ({
             statusCode: res.statusCode,
           }),
         },
+
+        /**
+         * 로그에 절대 남기면 안 되는 민감 정보
+         */
         redact: {
           paths: [
+            // Request body
             'req.body.password',
+            'req.body.currentPassword',
+            'req.body.newPassword',
             'req.body.refreshToken',
+            'req.body.accessToken',
+            'req.body.token',
+
+            // Authorization
+            'req.headers.authorization',
+            'req.headers.cookie',
+            'req.headers["set-cookie"]',
+
+            // 일반적인 token 필드
+            'req.body.*.accessToken',
+            'req.body.*.refreshToken',
+            'req.body.*.password',
+
+            // 혹시 객체 안에 들어가는 토큰
             '*.accessToken',
             '*.refreshToken',
           ],
-          censor: '**REDACTED**',
+
+          censor: '[REDACTED]',
         },
 
+        /**
+         * status code에 따른 log level
+         */
         customLogLevel: (req, res, err) => {
-          if (res.statusCode >= 500 || err) return 'error';
-          if (res.statusCode >= 400) return 'warn';
+          if (err || res.statusCode >= 500) {
+            return 'error';
+          }
+
+          if (res.statusCode >= 400) {
+            return 'warn';
+          }
+
           return 'info';
         },
 
+        /**
+         * 성공 로그
+         */
         customSuccessMessage: (req, res) =>
           `${req.method} ${req.url} completed`,
 
+        /**
+         * 개발환경에서만 pretty log
+         */
         transport:
           process.env.NODE_ENV !== 'production'
             ? {
@@ -84,7 +121,6 @@ import { RedisModule } from './redis/redis.module';
                 },
               }
             : undefined,
-
         autoLogging: {
           ignore: (req) => {
             const ignoredPaths = ['/favicon.ico', '/health', '/robots.txt'];

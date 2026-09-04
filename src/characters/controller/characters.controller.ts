@@ -17,12 +17,6 @@ export class CharactersController {
     return await this.charactersService.getCharacterImage();
   }
 
-  // 직업 관련 통계
-  // @Get('statistics')
-  // async findStatistics() {
-  //   return await this.charactersService.findStatistics();
-  // }
-
   // 해당 직업의 기본 정보와 스킬
   @Get(':classId')
   async findOneDetailClass(@Param('classId', ParseIntPipe) classId: number) {
