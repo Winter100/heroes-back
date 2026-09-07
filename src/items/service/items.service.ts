@@ -1,3 +1,4 @@
+import { RedisService } from './../../redis/redis.service';
 import {
   BadRequestException,
   Injectable,
@@ -15,13 +16,20 @@ import { ItemSetOptionMapper } from '../mapper/item-set-option-mapper';
 import { sortRecipe } from '../utils/utils';
 import { ItemRecipeMapper } from '../mapper/item-recipe-mapper';
 import { ItemMapper } from '../mapper/items-mapper';
+import { RedisKeys } from 'src/redis/redis-keys.constant';
+import { ItemRecipeResponseArray } from '../type/item-type';
+import { PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class ItemService {
-  constructor(private readonly itemRepository: ItemRepository) {}
+  constructor(
+    private readonly itemRepository: ItemRepository,
+    private readonly redisService: RedisService,
+    private readonly logger: PinoLogger,
+  ) {}
 
   /**
-   * 특정 아이템 조회
+   * 베이스 아이템 조회
    * @param id
    * @returns
    */
@@ -72,9 +80,19 @@ export class ItemService {
    * 모든 아이템 기본 조회
    * @returns
    */
-  async findAllItems() {
+  async findAllItems(): Promise<ItemWithRelations[]> {
+    const cached = await this.redisService.get<ItemWithRelations[]>(
+      RedisKeys.itemList(),
+    );
+
+    if (cached) {
+      return cached;
+    }
+
     const items = await this.itemRepository.findAllItems();
     if (!items) throw new NotFoundException('아이템이 없습니다.');
+    await this.redisService.set(RedisKeys.itemList(), items);
+
     return items;
   }
 
@@ -144,10 +162,20 @@ export class ItemService {
    * @returns
    */
   async getItemRecipeTable() {
+    const cached = await this.redisService.get<ItemRecipeResponseArray>(
+      RedisKeys.recipeList(),
+    );
+
+    if (cached) {
+      return cached;
+    }
     const recipes = await this.itemRepository.findItemRecipeTable();
 
     if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
-    return sortRecipe(ItemRecipeMapper.toResponse(recipes));
+    const recipeList = sortRecipe(ItemRecipeMapper.toResponse(recipes));
+
+    await this.redisService.set(RedisKeys.recipeList(), recipeList);
+    return recipeList;
   }
 
   /**

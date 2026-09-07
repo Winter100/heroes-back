@@ -1,3 +1,4 @@
+import { RedisService } from 'src/redis/redis.service';
 import { ItemService } from './items.service';
 import { ImageUploadService } from 'src/supabase/imageUpload.service';
 import {
@@ -16,6 +17,7 @@ import { UpdateItemDto } from '../dto/item-update.dto';
 import { Prisma } from '@prisma/client';
 import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { RedisKeys } from 'src/redis/redis-keys.constant';
 
 @Injectable()
 export class ItemAdminService {
@@ -25,6 +27,7 @@ export class ItemAdminService {
     private readonly itemRepository: ItemRepository,
     private readonly imageUploadService: ImageUploadService,
     private readonly itemService: ItemService,
+    private readonly redisService: RedisService,
   ) {}
 
   /**
@@ -42,6 +45,7 @@ export class ItemAdminService {
     try {
       const item = await this.itemRepository.create(createItemDto, imageUrl);
 
+      await this.redisService.delete(RedisKeys.itemList());
       this.logger.info(
         { itemName: createItemDto.name },
         'create item succeeded',
@@ -92,6 +96,7 @@ export class ItemAdminService {
         { itemName: updateItemDto.name },
         'update item succeeded',
       );
+      await this.redisService.delete(RedisKeys.itemList());
       return { message: `${updateItem.name}을 수정했습니다.` };
     } catch (error) {
       if (imageUrl) {
@@ -151,7 +156,6 @@ export class ItemAdminService {
     if (!updateStepDto.stepId)
       throw new BadRequestException('강화 아이디가 필요합니다.');
 
-    // 자기 자신의 값만 바꿔도 여기에 걸려서 안됨.
     const findStepData = await this.itemRepository.findStepByItemIdAndStepName(
       itemId,
       updateStepDto.steps.stepName,
@@ -220,7 +224,9 @@ export class ItemAdminService {
       }
     }
 
+    await this.redisService.delete(RedisKeys.itemList());
     this.logger.info({ itemId }, 'delete item succeeded');
+
     return { message: '아이템이 성공적으로 삭제되었습니다.' };
   }
 
@@ -233,6 +239,7 @@ export class ItemAdminService {
   async upsertRecipe(stepId: number, upsertRecipeDto: UpsertRecipeDto) {
     this.logger.info({ stepId }, 'upsert recipe start');
     await this.itemService.findStepByStepId(stepId);
+    await this.redisService.delete(RedisKeys.itemList());
     this.logger.info({ stepId }, 'upsert recipe succeeded');
     return this.itemRepository.upsertRecipe(stepId, upsertRecipeDto);
   }
