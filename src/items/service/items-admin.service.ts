@@ -1,4 +1,4 @@
-import { RedisService } from 'src/redis/redis.service';
+import { RedisService } from './../../redis/redis.service';
 import { ItemService } from './items.service';
 import { ImageUploadService } from 'src/supabase/imageUpload.service';
 import {
@@ -12,11 +12,12 @@ import {
   ConflictException,
   Injectable,
 } from '@nestjs/common';
-// import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { UpdateItemDto } from '../dto/item-update.dto';
 import { Prisma } from '@prisma/client';
 import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { EventEmitter2 } from 'eventemitter2';
+import { ItemUpdatedEvent } from '../event/item-updated.event';
 import { RedisKeys } from 'src/redis/redis-keys.constant';
 
 @Injectable()
@@ -27,6 +28,7 @@ export class ItemAdminService {
     private readonly itemRepository: ItemRepository,
     private readonly imageUploadService: ImageUploadService,
     private readonly itemService: ItemService,
+    private readonly eventEmitter: EventEmitter2,
     private readonly redisService: RedisService,
   ) {}
 
@@ -45,7 +47,8 @@ export class ItemAdminService {
     try {
       const item = await this.itemRepository.create(createItemDto, imageUrl);
 
-      await this.redisService.delete(RedisKeys.itemList());
+      this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
+
       this.logger.info(
         { itemName: createItemDto.name },
         'create item succeeded',
@@ -96,7 +99,7 @@ export class ItemAdminService {
         { itemName: updateItemDto.name },
         'update item succeeded',
       );
-      await this.redisService.delete(RedisKeys.itemList());
+      this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
       return { message: `${updateItem.name}을 수정했습니다.` };
     } catch (error) {
       if (imageUrl) {
@@ -134,6 +137,7 @@ export class ItemAdminService {
       throw new BadRequestException('이미 존재하는 강화 단계입니다');
 
     await this.itemRepository.createStep(findItem, createStepDto);
+    this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
 
     this.logger.info(
       { itemId, stepid: createStepDto?.stepId },
@@ -165,6 +169,7 @@ export class ItemAdminService {
       throw new BadRequestException('이미 존재하는 강화 단계입니다');
 
     await this.itemRepository.updateStep(updateStepDto.stepId, updateStepDto);
+    this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
 
     this.logger.info(
       { itemId, stepid: updateStepDto?.stepId },
@@ -181,6 +186,7 @@ export class ItemAdminService {
   async deleteStepItem(stepId: number) {
     this.logger.info({ stepId }, 'delete step item start');
     await this.itemRepository.deleteStep(stepId);
+    this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
     this.logger.info({ stepId }, 'delete step item succeeded');
     return { message: `${stepId} 아이템 강화 삭제 성공` };
   }
@@ -198,13 +204,18 @@ export class ItemAdminService {
    * @returns
    */
   async getBasicId() {
-    const [category, tier, slot] = await Promise.all([
-      this.itemRepository.getCategory(),
-      this.itemRepository.getTier(),
-      this.itemRepository.getSlots(),
-    ]);
-
-    return { category, tier, slot };
+    return this.redisService.getOrSet(
+      RedisKeys.itemBasicForm(),
+      60 * 300,
+      async () => {
+        const [category, tier, slot] = await Promise.all([
+          this.itemRepository.getCategory(),
+          this.itemRepository.getTier(),
+          this.itemRepository.getSlots(),
+        ]);
+        return { category, tier, slot };
+      },
+    );
   }
 
   /**
@@ -224,7 +235,7 @@ export class ItemAdminService {
       }
     }
 
-    await this.redisService.delete(RedisKeys.itemList());
+    this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
     this.logger.info({ itemId }, 'delete item succeeded');
 
     return { message: '아이템이 성공적으로 삭제되었습니다.' };
@@ -239,8 +250,12 @@ export class ItemAdminService {
   async upsertRecipe(stepId: number, upsertRecipeDto: UpsertRecipeDto) {
     this.logger.info({ stepId }, 'upsert recipe start');
     await this.itemService.findStepByStepId(stepId);
-    await this.redisService.delete(RedisKeys.itemList());
+    const result = await this.itemRepository.upsertRecipe(
+      stepId,
+      upsertRecipeDto,
+    );
+    this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
     this.logger.info({ stepId }, 'upsert recipe succeeded');
-    return this.itemRepository.upsertRecipe(stepId, upsertRecipeDto);
+    return result;
   }
 }

@@ -6,7 +6,6 @@ import {
   EnchantResponseDto,
 } from '../dto/enchant-response.dto';
 import { EnchantTransformer } from '../enchant-transformer';
-import { EnchantDropCreateDto } from '../dto/enchant-drop-create.dto';
 import { EnchantCategory } from '@prisma/client';
 import { EnchantMapper } from 'src/items/mapper/enchant-mapper';
 import {
@@ -15,6 +14,7 @@ import {
   mergeEnchantPriceServer,
 } from '../util/enchant-util';
 import { RedisService } from 'src/redis/redis.service';
+import { RedisKeys } from 'src/redis/redis-keys.constant';
 
 @Injectable()
 export class EnchantService {
@@ -26,10 +26,16 @@ export class EnchantService {
   async findAllEnchant(
     category: EnchantCategory = EnchantCategory.ENCHANT,
   ): Promise<EnchantResponseDto[]> {
-    const entities =
-      await this.enchantRepository.findAllWithRelations(category);
+    return this.redisService.getOrSet(
+      RedisKeys.enchantList(category),
+      60 * 60,
+      async () => {
+        const entities =
+          await this.enchantRepository.findAllWithRelations(category);
 
-    return entities.map((enchant) => EnchantMapper.toResponse(enchant));
+        return entities.map((enchant) => EnchantMapper.toResponse(enchant));
+      },
+    );
   }
 
   async findEnchantDrop(): Promise<EnchantDropResponseDto[]> {
@@ -61,10 +67,6 @@ export class EnchantService {
     return EnchantMapper.toResponse(result);
   }
 
-  async updateEnchant(enchantDropCreateDto: EnchantDropCreateDto) {
-    return await this.enchantRepository.updateEnchantDrop(enchantDropCreateDto);
-  }
-
   async findAllPrice() {
     try {
       const enchantPriceList = await this.nexonService.getEnchantPrice();
@@ -80,7 +82,13 @@ export class EnchantService {
    * @returns
    */
   async getEnchantSSG() {
-    return await this.enchantRepository.getEnchantSSG();
+    return this.redisService.getOrSet(
+      RedisKeys.enchantSSG(),
+      60 * 60,
+      async () => {
+        return await this.enchantRepository.getEnchantSSG();
+      },
+    );
   }
 
   async getEnchantTable() {
@@ -98,6 +106,12 @@ export class EnchantService {
    * 인챈트 통계
    **/
   async findStatistics() {
-    return this.enchantRepository.getEnchantStats();
+    return this.redisService.getOrSet(
+      RedisKeys.enchantStatistics(),
+      60 * 60,
+      async () => {
+        return this.enchantRepository.getEnchantStats();
+      },
+    );
   }
 }

@@ -1,3 +1,4 @@
+import { RedisService } from 'src/redis/redis.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { RaidRepository } from '../repository/raid.repository';
 import {
@@ -6,19 +7,29 @@ import {
 } from '../dto/raid-response.dto';
 import { RaidMapper } from '../mapper/raid.mapper';
 import { raidSort } from '../utils/raid.util';
+import { RedisKeys } from 'src/redis/redis-keys.constant';
 
 @Injectable()
 export class RaidService {
-  constructor(private readonly raidRepository: RaidRepository) {}
+  constructor(
+    private readonly raidRepository: RaidRepository,
+    private readonly redisService: RedisService,
+  ) {}
 
   /**
    * 모든 레이드 정보 조회
    * @returns
    */
   async findAllRaid(): Promise<RaidResponseDto[]> {
-    const dbRaid = await this.raidRepository.findAllWithRelations();
-    if (!dbRaid) throw new NotFoundException('레이드 정보 조회 에러');
-    return dbRaid.map((raid) => RaidMapper.toBasicResponse(raid));
+    return this.redisService.getOrSet(
+      RedisKeys.raidList(),
+      60 * 60,
+      async () => {
+        const dbRaid = await this.raidRepository.findAllWithRelations();
+        if (!dbRaid) throw new NotFoundException('레이드 정보 조회 에러');
+        return dbRaid.map((raid) => RaidMapper.toBasicResponse(raid));
+      },
+    );
   }
 
   /**
@@ -50,15 +61,25 @@ export class RaidService {
   }
 
   async getRaidSSG() {
-    const raids = await this.findTableRaid();
+    return this.redisService.getOrSet(
+      RedisKeys.raidSSG(),
+      60 * 300,
+      async () => {
+        const raids = await this.findTableRaid();
 
-    const filteredData = raids.filter((raid) => raid.raid_name !== '미분류');
+        const filteredData = raids.filter(
+          (raid) => raid.raid_name !== '미분류',
+        );
 
-    const names = [
-      ...new Set(filteredData.flatMap((m) => m.monsters.map((r) => r.battle))),
-    ];
+        const names = [
+          ...new Set(
+            filteredData.flatMap((m) => m.monsters.map((r) => r.battle)),
+          ),
+        ];
 
-    return names;
+        return names;
+      },
+    );
   }
 
   /**
@@ -66,6 +87,12 @@ export class RaidService {
    * @returns
    */
   findStatistics() {
-    return this.raidRepository.findStatistics();
+    return this.redisService.getOrSet(
+      RedisKeys.raidStatistics(),
+      60 * 60,
+      async () => {
+        return this.raidRepository.findStatistics();
+      },
+    );
   }
 }

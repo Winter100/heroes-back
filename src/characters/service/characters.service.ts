@@ -5,20 +5,30 @@ import {
 } from '@nestjs/common';
 import { CharacterRepository } from '../repository/character.repository';
 import { CharacterMapper } from '../mapper/Character.mapper';
+import { RedisService } from 'src/redis/redis.service';
+import { RedisKeys } from 'src/redis/redis-keys.constant';
 
 @Injectable()
 export class CharactersService {
-  constructor(private readonly characterRepository: CharacterRepository) {}
+  constructor(
+    private readonly characterRepository: CharacterRepository,
+    private readonly redisService: RedisService,
+  ) {}
 
   /**
    * 모든 캐릭터 정보
    * @returns
    */
   async findAllCharacter() {
-    const characters = await this.characterRepository.findAllCharacter();
-    if (!characters) throw new NotFoundException(`캐릭터 정보가 없습니다.`);
-
-    return CharacterMapper.toCharacterBasicAllResponse(characters);
+    return this.redisService.getOrSet(
+      RedisKeys.characterList(),
+      60 * 60,
+      async () => {
+        const characters = await this.characterRepository.findAllCharacter();
+        if (!characters) throw new NotFoundException(`캐릭터 정보가 없습니다.`);
+        return CharacterMapper.toCharacterBasicAllResponse(characters);
+      },
+    );
   }
 
   /**
@@ -55,16 +65,23 @@ export class CharactersService {
    * 2. 성별 수
    * 3. 연도별 출시 캐릭터 수
    */
-  async findStatistics() {
-    const [total, characters, genderCount] = await Promise.all([
-      this.characterRepository.count(),
-      this.findAllCharacter(),
-      this.countGender(),
-    ]);
+  findStatistics() {
+    return this.redisService.getOrSet(
+      RedisKeys.characterStatistics(),
+      60 * 60,
+      async () => {
+        const [total, characters, genderCount] = await Promise.all([
+          this.characterRepository.count(),
+          this.findAllCharacter(),
+          this.countGender(),
+        ]);
 
-    const year = CharacterMapper.toYear(characters);
-    const gCount = CharacterMapper.toGenderCount(genderCount);
-    return { total, year, genderCount: gCount };
+        const year = CharacterMapper.toYear(characters);
+        const gCount = CharacterMapper.toGenderCount(genderCount);
+
+        return { total, year, genderCount: gCount };
+      },
+    );
   }
 
   /**

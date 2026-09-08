@@ -1,3 +1,4 @@
+import { EventEmitter2 } from 'eventemitter2';
 import { RaidDetailUpsertDto } from './../dto/raid-detail-upsert.dto';
 import {
   BadRequestException,
@@ -13,6 +14,7 @@ import { UpdateRaidDto } from '../dto/raid-update.dto';
 import { RaidTitleCreateDto } from '../dto/raid-title-create.dto';
 import { Prisma, RaidTitle } from '@prisma/client';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { RaidUpdatedEvent } from '../event/raid-updated.event';
 
 @Injectable()
 export class RaidAdminService {
@@ -21,6 +23,7 @@ export class RaidAdminService {
     private readonly logger: PinoLogger,
     private readonly raidRepository: RaidRepository,
     private readonly imageUploadService: ImageUploadService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -51,7 +54,12 @@ export class RaidAdminService {
         { raidId: raidCreateDto.raidId, battle: raidCreateDto.battle },
         'create raid succeeded',
       );
-      return await this.raidRepository.createRaid(raidCreateDto, imageUrl);
+      const data = await this.raidRepository.createRaid(
+        raidCreateDto,
+        imageUrl,
+      );
+      this.eventEmitter.emit(RaidUpdatedEvent.name);
+      return data;
     } catch (e) {
       if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
       throw new InternalServerErrorException(e);
@@ -90,7 +98,9 @@ export class RaidAdminService {
       if (findRaid.image && imageUrl)
         await this.imageUploadService.deleteImage(findRaid.image);
 
+      this.eventEmitter.emit(RaidUpdatedEvent.name);
       this.logger.info({ raidId }, 'update raid succeeded');
+
       return {
         message: `${updateRaid.battle}을 수정했습니다.`,
       };
@@ -118,6 +128,7 @@ export class RaidAdminService {
       await this.raidRepository.delete(raidId);
       if (findRaid.image)
         await this.imageUploadService.deleteImage(findRaid.image);
+      this.eventEmitter.emit(RaidUpdatedEvent.name);
       this.logger.info({ raidId }, 'delete raid succeeded');
       return { message: '삭제에 성공했습니다' };
     } catch (error) {
@@ -164,6 +175,7 @@ export class RaidAdminService {
   async createRaidTitle(
     raidTitleCreateDto: RaidTitleCreateDto,
   ): Promise<RaidTitle> {
+    this.eventEmitter.emit(RaidUpdatedEvent.name);
     return await this.raidRepository.createRaidTitle(raidTitleCreateDto.title);
   }
 }

@@ -1,10 +1,10 @@
+import { EventEmitter2 } from 'eventemitter2';
 import { CreateSkillDto } from './../dto/create-skill.dto';
 import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-
 import { BUCKET_NAME } from 'src/supabase/constant/bucket';
 import { ImageUploadService } from 'src/supabase/imageUpload.service';
 import { CharacterRepository } from '../repository/character.repository';
@@ -15,6 +15,7 @@ import { UpdateClassDto } from '../dto/character-class-update.dto';
 import { UpdateSkillDto } from '../dto/update-skill.dto';
 import { DisconnectClassSkill } from '../dto/disconnect-class-skill.dto';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { CharacterUpdatedEvent } from '../event/character-updated.event';
 
 @Injectable()
 export class CharactersAdminService {
@@ -23,6 +24,7 @@ export class CharactersAdminService {
     private readonly logger: PinoLogger,
     private readonly imageUploadService: ImageUploadService,
     private readonly characterRepository: CharacterRepository,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -59,6 +61,7 @@ export class CharactersAdminService {
       );
     }
     this.logger.info({ class: response }, 'create class succeeded');
+    this.eventEmitter.emit(CharacterUpdatedEvent.name);
     return plainToInstance(CharacterClassResponseDto, response);
   }
 
@@ -95,9 +98,11 @@ export class CharactersAdminService {
       }
 
       this.logger.info({ class: updateClass }, 'update class succeeded');
+      this.eventEmitter.emit(CharacterUpdatedEvent.name);
+
       return updateClass;
     } catch (error) {
-      if (imageUrl) await this.imageUploadService.deleteImage(imageUrl);
+      this.eventEmitter.emit(CharacterUpdatedEvent.name);
       throw new BadRequestException(
         error instanceof Error ? error.message : error,
       );
@@ -110,7 +115,9 @@ export class CharactersAdminService {
    * @returns
    */
   async deleteClassProfile(classId: number) {
-    return await this.characterRepository.deleteClassProfile(classId);
+    const data = await this.characterRepository.deleteClassProfile(classId);
+    this.eventEmitter.emit(CharacterUpdatedEvent.name);
+    return data;
   }
 
   /**
@@ -148,6 +155,8 @@ export class CharactersAdminService {
       { skillName: createSkillDto.name, classId: createSkillDto.classIds },
       'create class skill succeeded',
     );
+
+    this.eventEmitter.emit(CharacterUpdatedEvent.name);
     return createdSkill;
   }
 
@@ -231,13 +240,15 @@ export class CharactersAdminService {
     if (!connectedCharacterSkill)
       throw new NotFoundException('스킬을 찾을 수 없습니다.');
 
+    const data = await this.characterRepository.disconnectClassSkill(
+      connectedCharacterSkill.id,
+    );
     this.logger.info(
       { skillId, classId: connectClassSkill.classId },
       'delete class skill succeeded',
     );
-    return await this.characterRepository.disconnectClassSkill(
-      connectedCharacterSkill.id,
-    );
+    this.eventEmitter.emit(CharacterUpdatedEvent.name);
+    return data;
   }
 
   /**

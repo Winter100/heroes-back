@@ -62,44 +62,33 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.logger.info('Redis connection closed');
   }
 
-  async get<T>(key: string): Promise<T | null> {
+  async getOrSet<T>(key: string, ttl: number, fetchFn: () => Promise<T>) {
     try {
-      const value = await this.redis.get(key);
-
-      if (value === null) {
-        this.logger.debug({ key }, 'redis cache miss');
-        return null;
+      const cached = await this.redis.get(key);
+      if (cached !== null && cached !== undefined) {
+        this.logger.debug({ key }, 'redis cache hit');
+        return JSON.parse(cached) as T;
       }
-
-      this.logger.debug({ key }, 'redis cache hit');
-
-      return JSON.parse(value) as T;
     } catch (err: unknown) {
       this.logger.error({ err, key }, 'redis cache get failed');
-
-      return null;
     }
-  }
 
-  async set<T>(key: string, value: T, ttl?: number): Promise<void> {
+    this.logger.debug({ key }, 'redis cache miss');
+    const data = await fetchFn();
+
     try {
-      const serialized = JSON.stringify(value);
-
-      if (ttl) {
-        await this.redis.set(key, serialized, 'EX', ttl);
-      } else {
-        await this.redis.set(key, serialized);
-      }
-
+      const serialized = JSON.stringify(data);
+      await this.redis.set(key, serialized, 'EX', ttl);
       this.logger.debug({ key }, 'redis cache set');
     } catch (err: unknown) {
       this.logger.error({ err, key }, 'redis cache set failed');
     }
+    return data;
   }
 
-  async delete(key: string): Promise<void> {
+  async del(key: string | string[]): Promise<void> {
     try {
-      await this.redis.del(key);
+      await this.redis.del(...key);
       this.logger.debug({ key }, 'Redis cache deleted');
     } catch (err: unknown) {
       this.logger.error({ err, key }, 'Redis cache delete failed');

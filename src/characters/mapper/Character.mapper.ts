@@ -39,7 +39,6 @@ export class CharacterMapper {
 
   static toYear(
     characters: {
-      skillCount: number;
       name: string;
       id: number;
       image: string | null;

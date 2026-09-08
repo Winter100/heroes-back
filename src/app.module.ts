@@ -19,9 +19,11 @@ import { IncomingMessage, ServerResponse } from 'node:http';
 import { GlobalExceptionFilter } from './all-exceptions.filter';
 import { APP_FILTER } from '@nestjs/core';
 import { RedisModule } from './redis/redis.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',

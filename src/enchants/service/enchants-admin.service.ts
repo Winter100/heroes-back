@@ -11,8 +11,8 @@ import { aggregateByEnchantPreset } from '../util/enchant-util';
 import { Prisma } from '@prisma/client';
 import { ItemAdminService } from 'src/items/service/items-admin.service';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
-import { RedisService } from 'src/redis/redis.service';
-import { RedisKeys } from 'src/redis/redis-keys.constant';
+import { EventEmitter2 } from 'eventemitter2';
+import { EnchantUpdatedEvent } from '../event/enchant-updated.event';
 
 @Injectable()
 export class EnchantAdminService {
@@ -23,7 +23,7 @@ export class EnchantAdminService {
     private readonly nexonService: NexonService,
     private readonly itemAdminService: ItemAdminService,
     private readonly enchantService: EnchantService,
-    private readonly redisService: RedisService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   /**
@@ -31,7 +31,7 @@ export class EnchantAdminService {
    * @param createEnchantDto
    * @returns
    */
-  createEnchant(createEnchantDto: CreateEnchantDto) {
+  async createEnchant(createEnchantDto: CreateEnchantDto) {
     this.logger.info(
       { enchant: createEnchantDto.name },
       'create enchant start',
@@ -47,6 +47,8 @@ export class EnchantAdminService {
       { enchant: createEnchantDto.name },
       'create enchant succeeded',
     );
+
+    this.eventEmitter.emit(EnchantUpdatedEvent.name);
     return this.enchantRepository.createEnchant(createData);
   }
 
@@ -87,8 +89,14 @@ export class EnchantAdminService {
       updateData.affix = { connect: { id: updateEnchantDto.affixId } };
     }
 
+    const data = await this.enchantRepository.updateEnchant(
+      enchantId,
+      updateData,
+    );
     this.logger.info({ enchantId: enchantId }, 'update enchant succeeded');
-    return this.enchantRepository.updateEnchant(enchantId, updateData);
+    this.eventEmitter.emit(EnchantUpdatedEvent.name);
+
+    return data;
   }
 
   /**
@@ -148,9 +156,10 @@ export class EnchantAdminService {
    * @returns
    */
   async deleteEnchant(enchantId: number) {
-    this.logger.info({ enchantId }, 'delete enchant start');
     const deleted = await this.enchantRepository.deleteEnchant(enchantId);
     this.logger.info({ enchantId }, 'delete enchant succeeded');
+    this.eventEmitter.emit(EnchantUpdatedEvent.name);
+
     return deleted;
   }
 
@@ -194,17 +203,5 @@ export class EnchantAdminService {
     } catch {
       return [];
     }
-  }
-
-  async resetCache() {
-    this.logger.info(
-      { key: RedisKeys.enchantList() },
-      'redis reset cache start',
-    );
-    await this.redisService.delete(RedisKeys.enchantList());
-    this.logger.info(
-      { key: RedisKeys.enchantList() },
-      'redis reset cache succeeded',
-    );
   }
 }

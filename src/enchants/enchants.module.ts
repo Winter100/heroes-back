@@ -6,11 +6,17 @@ import { NexonModule } from 'src/nexon/nexon.module';
 import { EnchantsAdminController } from './controller/enchants-admin.controller';
 import { EnchantAdminService } from './service/enchants-admin.service';
 import { ItemsModule } from 'src/items/items.module';
+import { EnchantCacheHandler } from './event/enchant-cache.handler';
 
 @Module({
   imports: [NexonModule, ItemsModule],
   controllers: [EnchantsController, EnchantsAdminController],
-  providers: [EnchantService, EnchantAdminService, EnchantRepository],
+  providers: [
+    EnchantService,
+    EnchantAdminService,
+    EnchantRepository,
+    EnchantCacheHandler,
+  ],
   exports: [EnchantService],
 })
 export class EnchantsModule {}

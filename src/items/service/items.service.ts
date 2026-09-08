@@ -17,19 +17,16 @@ import { sortRecipe } from '../utils/utils';
 import { ItemRecipeMapper } from '../mapper/item-recipe-mapper';
 import { ItemMapper } from '../mapper/items-mapper';
 import { RedisKeys } from 'src/redis/redis-keys.constant';
-import { ItemRecipeResponseArray } from '../type/item-type';
-import { PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class ItemService {
   constructor(
     private readonly itemRepository: ItemRepository,
     private readonly redisService: RedisService,
-    private readonly logger: PinoLogger,
   ) {}
 
   /**
-   * 베이스 아이템 조회
+   * 특정 베이스 아이템 조회
    * @param id
    * @returns
    */
@@ -43,7 +40,7 @@ export class ItemService {
   }
 
   /**
-   * 특정 아이템의 스텝 조회
+   * 아이템 스텝 아이디로 자신의 스텟 조회
    * @param stepId
    * @returns
    */
@@ -81,19 +78,15 @@ export class ItemService {
    * @returns
    */
   async findAllItems(): Promise<ItemWithRelations[]> {
-    const cached = await this.redisService.get<ItemWithRelations[]>(
+    return this.redisService.getOrSet(
       RedisKeys.itemList(),
+      60 * 60,
+      async () => {
+        const items = await this.itemRepository.findAllItems();
+        if (!items) throw new NotFoundException('아이템이 없습니다.');
+        return items;
+      },
     );
-
-    if (cached) {
-      return cached;
-    }
-
-    const items = await this.itemRepository.findAllItems();
-    if (!items) throw new NotFoundException('아이템이 없습니다.');
-    await this.redisService.set(RedisKeys.itemList(), items);
-
-    return items;
   }
 
   /**
@@ -162,20 +155,16 @@ export class ItemService {
    * @returns
    */
   async getItemRecipeTable() {
-    const cached = await this.redisService.get<ItemRecipeResponseArray>(
+    return this.redisService.getOrSet(
       RedisKeys.recipeList(),
+      60 * 60,
+      async () => {
+        const recipes = await this.itemRepository.findItemRecipeTable();
+        if (recipes.length === 0)
+          throw new NotFoundException('레시피가 없습니다.');
+        return sortRecipe(ItemRecipeMapper.toResponse(recipes));
+      },
     );
-
-    if (cached) {
-      return cached;
-    }
-    const recipes = await this.itemRepository.findItemRecipeTable();
-
-    if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
-    const recipeList = sortRecipe(ItemRecipeMapper.toResponse(recipes));
-
-    await this.redisService.set(RedisKeys.recipeList(), recipeList);
-    return recipeList;
   }
 
   /**
@@ -183,10 +172,17 @@ export class ItemService {
    * @returns
    */
   async getItemRecipeSSG() {
-    const recipes = await this.itemRepository.findItemRecipeSSG();
-
-    if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
-    return ItemRecipeMapper.toSSGResponse(recipes);
+    return this.redisService.getOrSet(
+      RedisKeys.recipeSSG(),
+      60 * 60,
+      async () => {
+        const recipes = await this.itemRepository.findItemRecipeSSG();
+        if (recipes.length === 0)
+          throw new NotFoundException('레시피가 없습니다.');
+        const data = ItemRecipeMapper.toSSGResponse(recipes);
+        return data;
+      },
+    );
   }
 
   /**
@@ -214,6 +210,12 @@ export class ItemService {
    * @returns
    */
   findStatistics() {
-    return this.itemRepository.findStatistics();
+    return this.redisService.getOrSet(
+      RedisKeys.itemStatistics(),
+      60 * 60,
+      async () => {
+        return await this.itemRepository.findStatistics();
+      },
+    );
   }
 }
