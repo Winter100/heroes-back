@@ -1,4 +1,4 @@
-import { EnchantResponseDto } from '../dto/enchant-response.dto';
+import { EnchantResponse } from 'src/items/mapper/enchant-mapper';
 import {
   EnchantFormatingType,
   ItemPriceType,
@@ -73,7 +73,7 @@ export const convertPriceMap = (priceData: EnchantFormatingType[]) => {
 };
 
 export const mergeEnchantPriceServer = (
-  enchants: EnchantResponseDto[],
+  enchants: EnchantResponse[],
   priceMap: Map<string, EnchantFormatingType>,
 ) => {
   return enchants.map((item) => {

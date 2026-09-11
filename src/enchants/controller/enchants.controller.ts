@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
-import { EnchantResponseDto } from '../dto/enchant-response.dto';
 import { EnchantQueryDto } from '../dto/enchant-query.dto';
 import { EnchantService } from '../service/enchants.service';
 import { IntParam } from 'src/common/decorators/int.param';
+import { EnchantResponse } from 'src/items/mapper/enchant-mapper';
 
 @Controller('enchants')
 export class EnchantsController {
@@ -10,9 +10,7 @@ export class EnchantsController {
 
   // 모든 인챈트 조회
   @Get()
-  async findAll(
-    @Query() query: EnchantQueryDto,
-  ): Promise<EnchantResponseDto[]> {
+  async findAll(@Query() query: EnchantQueryDto): Promise<EnchantResponse[]> {
     return await this.enchantService.findAllEnchant(query.category);
   }
 

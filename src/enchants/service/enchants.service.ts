@@ -1,10 +1,7 @@
 import { NexonService } from 'src/nexon/nexon.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { EnchantRepository } from '../repository/enchant.respository';
-import {
-  EnchantDropResponseDto,
-  EnchantResponseDto,
-} from '../dto/enchant-response.dto';
+import { EnchantDropResponseDto } from '../dto/enchant-response.dto';
 import { EnchantTransformer } from '../enchant-transformer';
 import { EnchantCategory } from '@prisma/client';
 import { EnchantMapper } from 'src/items/mapper/enchant-mapper';
@@ -23,9 +20,7 @@ export class EnchantService {
     private readonly nexonService: NexonService,
     private readonly redisService: RedisService,
   ) {}
-  async findAllEnchant(
-    category: EnchantCategory = EnchantCategory.ENCHANT,
-  ): Promise<EnchantResponseDto[]> {
+  async findAllEnchant(category: EnchantCategory = EnchantCategory.ENCHANT) {
     return this.redisService.getOrSet(
       RedisKeys.enchantList(category),
       60 * 60,

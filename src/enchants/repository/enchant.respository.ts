@@ -168,6 +168,7 @@ const baseRelationsSelect = {
     select: {
       slot: {
         select: {
+          id: true,
           name: true,
           value: true,
         },
@@ -176,11 +177,13 @@ const baseRelationsSelect = {
   },
   rank: {
     select: {
+      id: true,
       name: true,
     },
   },
   affix: {
     select: {
+      id: true,
       value: true,
     },
   },
@@ -188,6 +191,7 @@ const baseRelationsSelect = {
     select: {
       stat: {
         select: {
+          id: true,
           name: true,
         },
       },

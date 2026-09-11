@@ -16,12 +16,7 @@ export class CacheInvalidationService {
   }
 
   async invalidateItem(): Promise<void> {
-    const keys: string[] = [
-      RedisKeys.itemList(),
-      RedisKeys.itemStatistics(),
-      RedisKeys.recipeList(),
-      RedisKeys.recipeSSG(),
-    ];
+    const keys: string[] = [RedisKeys.itemList(), RedisKeys.itemStatistics()];
 
     await this.redisService.del(keys);
   }
