@@ -33,7 +33,13 @@ export const itemRecipeTableItemSelect_Part2 = {
           name: true,
         },
       },
-      slot: true,
+      slot: {
+        select: {
+          id: true,
+          name: true,
+          value: true,
+        },
+      },
       itemSetList: {
         select: {
           item: {

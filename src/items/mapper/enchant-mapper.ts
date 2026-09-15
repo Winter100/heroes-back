@@ -6,7 +6,7 @@ export class EnchantMapper {
       id: enchant.id,
       name: enchant.name,
       rank: enchant.rank,
-      affix: enchant.affix,
+      affix: { id: enchant.affix.id, value: enchant.affix.value.toLowerCase() },
       slot: enchant.enchantSlot?.map((slot) => ({
         id: slot?.slot.id,
         name: slot?.slot?.name,

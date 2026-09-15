@@ -81,6 +81,7 @@ export const mergeEnchantPriceServer = (
     return {
       ...item,
       ...priceInfo,
+      affix: { id: item.affix.id, value: item.affix.value },
     };
   });
 };

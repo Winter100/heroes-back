@@ -20,6 +20,7 @@ import { GlobalExceptionFilter } from './all-exceptions.filter';
 import { APP_FILTER } from '@nestjs/core';
 import { RedisModule } from './redis/redis.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { RevalidateModule } from './revalidate/revalidate.module';
 
 @Module({
   imports: [
@@ -146,6 +147,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     NexonModule,
     StatisticsModule,
     RedisModule,
+    RevalidateModule,
   ],
   controllers: [],
   providers: [

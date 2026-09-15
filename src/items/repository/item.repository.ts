@@ -333,6 +333,7 @@ const itemStepSelect = Prisma.validator<Prisma.ItemSelect>()({
   name: true,
   image: true,
   description: true,
+  slotId: true,
   slot: true,
   category: true,
   tier: true,
