@@ -1,9 +1,9 @@
 import { RedisService } from 'src/redis/redis.service';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PartholnRepository } from './repository/partholn.repository';
-import { PartholnType } from './constant/partholn';
 import { PartholnMapper } from './mapper/partholn-mapper';
 import { RedisKeys } from 'src/redis/redis-keys.constant';
+import { PartholnType } from './constant/partholn';
 
 @Injectable()
 export class PartholnService {
