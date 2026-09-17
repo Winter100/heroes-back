@@ -33,8 +33,8 @@ export class AuthController {
       await this.authService.signin(req.user);
     res.cookie('refreshToken', refresh_token, {
       httpOnly: true,
-      sameSite: 'lax',
-      // sameSite: 'strict',
+      secure: true,
+      sameSite: 'none',
       expires: expiresAt,
       path: '/',
     });
@@ -54,8 +54,8 @@ export class AuthController {
         await this.authService.signin(user);
       res.cookie('refreshToken', refresh_token, {
         httpOnly: true,
-        sameSite: 'lax',
-        // sameSite: 'strict',
+        secure: true,
+        sameSite: 'none',
         expires: expiresAt,
         path: '/',
       });
@@ -63,8 +63,8 @@ export class AuthController {
     } catch (error) {
       res.clearCookie('refreshToken', {
         httpOnly: true,
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        secure: true,
+        sameSite: 'none',
         path: '/',
       });
 
@@ -89,8 +89,8 @@ export class AuthController {
     await this.authService.signOut(req.id);
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
+      sameSite: 'none',
       path: '/',
     });
 
