@@ -18,10 +18,14 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
-  const frontendUrl = configService.get<string>('FRONTEND_URL');
+  const corsOrigins = configService
+    .getOrThrow<string>('CORS_ORIGINS')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter((origin) => origin.length > 0);
 
   app.enableCors({
-    origin: frontendUrl,
+    origin: corsOrigins,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
