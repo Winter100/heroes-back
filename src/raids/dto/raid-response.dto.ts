@@ -1,6 +1,7 @@
 import { Expose } from 'class-transformer';
 
 export class BossStatDto {
+  id!: number;
   stat_name!: string;
   stat_value!: number;
   image?: string;
@@ -17,11 +18,12 @@ class BasicClearRewardDto {
 }
 
 export class RaidResponseDto {
+  id!: number;
   battle!: string;
   boss!: string;
   image!: string | null;
   level!: number;
-  raidTitle!: string;
+  raidTitle!: { id: number; name: string };
   entry!: BossStatDto[];
   limit!: BossStatDto[];
   bonus!: BonusTargetsDto[];

@@ -4,6 +4,9 @@ import { Exclude, Expose, Transform } from 'class-transformer';
 @Exclude()
 export class EnchantResponseDto {
   @Expose()
+  id!: number;
+
+  @Expose()
   name!: string;
 
   @Expose()

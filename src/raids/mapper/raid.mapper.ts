@@ -13,6 +13,7 @@ export class RaidMapper {
     }>(
       (acc, cur) => {
         const dto: BossStatDto = {
+          id: cur.stat.id,
           stat_name: cur.stat.name,
           stat_value: cur.value,
           image: cur.stat.image ?? '',
@@ -32,10 +33,11 @@ export class RaidMapper {
       };
     });
 
-    const { boss, image, level, bonusTargets, battle, raidTitle } = raid;
+    const { id, boss, image, level, bonusTargets, battle, raidTitle } = raid;
 
     return {
-      raidTitle: raidTitle.name,
+      id,
+      raidTitle,
       battle,
       boss,
       level,
@@ -50,13 +52,13 @@ export class RaidMapper {
   static toRaidTableResponse(raid: RaidResponseDto[]): RaidTableResponseDto[] {
     const groupRaidByTitle = raid.reduce(
       (acc, cur) => {
-        const { raidTitle: raid_name, ...result } = cur;
+        const { raidTitle, ...result } = cur;
 
-        if (!acc[raid_name]) {
-          acc[raid_name] = [];
+        if (!acc[raidTitle.name]) {
+          acc[raidTitle.name] = [];
         }
 
-        acc[raid_name].push(result);
+        acc[raidTitle.name].push(result);
 
         return acc;
       },

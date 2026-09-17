@@ -6,10 +6,15 @@ import {
 import { SupabaseService } from './supabase.service';
 import { toWebp } from './utils/image-processor';
 import { generateFileName } from './utils/file.utils';
+import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
 export class ImageUploadService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(
+    @InjectPinoLogger(ImageUploadService.name)
+    private readonly logger: PinoLogger,
+    private readonly supabaseService: SupabaseService,
+  ) {}
 
   /**
    * 이미지는 전처리되어 webp형식으로 업로드 됩니다.
@@ -23,6 +28,8 @@ export class ImageUploadService {
     file: Express.Multer.File,
     bucket: string,
   ): Promise<string> {
+    this.logger.info({ filename: file.filename, bucket }, 'start upload image');
+
     if (!file || !file.buffer) {
       throw new BadRequestException('파일이 존재하지 않습니다.');
     }
@@ -30,15 +37,22 @@ export class ImageUploadService {
     const processedImageBuffer = await toWebp(file.buffer);
     const fileName = generateFileName(file.originalname);
 
-    return this.uploadFile(
+    const imageUrl = await this.uploadFile(
       bucket,
       fileName,
       processedImageBuffer,
       'image/webp',
     );
+
+    this.logger.info(
+      { filename: file.filename, url: imageUrl },
+      'upload succeeded',
+    );
+    return imageUrl;
   }
 
   async deleteImage(imageUrl: string) {
+    this.logger.info({ imageUrl }, 'start delete image');
     const supabase = this.supabaseService.getClient();
 
     const urlParts = imageUrl.split('/storage/v1/object/public/');
@@ -58,11 +72,22 @@ export class ImageUploadService {
       .from(bucket)
       .remove([filePath]);
 
-    if (error)
+    if (error) {
+      this.logger.error(
+        {
+          imageUrl,
+          filePath,
+          error: error.name,
+          message: error.message,
+        },
+        'image delete error',
+      );
       throw new InternalServerErrorException(
         '이미지 파일 삭제 중 오류가 발생했습니다.',
       );
+    }
 
+    this.logger.info({ imageUrl, bucket }, 'delete image succeeded');
     return data;
   }
 
@@ -72,6 +97,11 @@ export class ImageUploadService {
     buffer: Buffer,
     contentType: string,
   ) {
+    this.logger.info(
+      { bucketName, fileName, contentType },
+      'image upload start',
+    );
+
     const client = this.supabaseService.getClient();
     const { error } = await client.storage
       .from(bucketName)
@@ -81,11 +111,31 @@ export class ImageUploadService {
       });
 
     if (error) {
-      console.log('error', error);
+      this.logger.error(
+        {
+          bucketName,
+          fileName,
+          contentType,
+          error: error.name,
+          message: error.message,
+        },
+        'image upload error',
+      );
       throw new BadRequestException('업로드 실패');
     }
 
-    return client.storage.from(bucketName).getPublicUrl(fileName).data
-      .publicUrl;
+    const url = client.storage.from(bucketName).getPublicUrl(fileName)
+      .data.publicUrl;
+
+    this.logger.info(
+      {
+        bucketName,
+        fileName,
+        contentType,
+        url,
+      },
+      'image upload succeeded',
+    );
+    return url;
   }
 }

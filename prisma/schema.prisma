@@ -9,25 +9,24 @@ datasource db {
 }
 
 model Item {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  description String?
-  categoryId  Int
-  tierId      Int
-  image       String?
-  slotId      Int?
-
-  slot Slot? @relation(fields: [slotId], references: [id])
-
-  category Category @relation(fields: [categoryId], references: [id])
-  tier     ItemTier @relation(fields: [tierId], references: [id])
-
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+  description     String?
+  categoryId      Int
+  tierId          Int
+  image           String?
+  slotId          Int?
   enchantDrop     EnchantDrop[]
   equipmentStep   EquipmentStep[]
   grindIngredient GrindIngredient[]
   itemDrop        ItemDrop[]
   itemGrind       ItemGrind[]
+  category        Category          @relation(fields: [categoryId], references: [id])
+  slot            Slot?             @relation(fields: [slotId], references: [id])
+  tier            ItemTier          @relation(fields: [tierId], references: [id])
   itemSetList     ItemSetList[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("items")
 }
@@ -36,10 +35,12 @@ model EquipmentStep {
   id                Int          @id @default(autoincrement())
   itemId            Int
   stepName          String
-  item              Item         @relation(fields: [itemId], references: [id])
+  item              Item         @relation(fields: [itemId], references: [id], onDelete:Cascade)
   recipesAsMaterial ItemRecipe[] @relation("MaterialStep")
   recipesAsResult   ItemRecipe[] @relation("ResultStep")
   stats             ItemStats[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@unique([itemId, stepName])
   @@index([itemId])
@@ -54,6 +55,8 @@ model ItemRecipe {
   description  String?
   materialStep EquipmentStep @relation("MaterialStep", fields: [materialId], references: [id], onDelete: Cascade)
   resultStep   EquipmentStep @relation("ResultStep", fields: [resultId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@unique([resultId, materialId])
   @@index([resultId])
@@ -68,6 +71,8 @@ model ItemStats {
   equipmentStepId Int
   equipmentStep   EquipmentStep @relation(fields: [equipmentStepId], references: [id], onDelete: Cascade)
   stat            Stat          @relation(fields: [statId], references: [id], onDelete: Cascade)
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@unique([equipmentStepId, statId])
   @@index([equipmentStepId])
@@ -79,6 +84,8 @@ model Category {
   id    Int    @id @default(autoincrement())
   name  String @unique
   items Item[]
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("categories")
 }
@@ -88,6 +95,8 @@ model ItemTier {
   name     String    @unique
   enchants Enchant[]
   items    Item[]
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("tiers")
 }
@@ -95,6 +104,8 @@ model ItemTier {
 model ItemCraftTitle {
   id   Int    @id @default(autoincrement())
   name String @unique
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("craftTitles")
 }
@@ -112,6 +123,8 @@ model Enchant {
   affix       Affix           @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   rank        Rank            @relation(fields: [rankId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   tier        ItemTier        @relation(fields: [tierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("enchants")
 }
@@ -127,6 +140,8 @@ model Infusion {
   enchantSlot EnchantSlot[]
   affix       Affix           @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   rank        Rank            @relation(fields: [rankId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("infusions")
 }
@@ -138,6 +153,8 @@ model Partholn {
   affixId Int
   effects Effect[]
   affix   Affix    @relation(fields: [affixId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("partholns")
 }
@@ -147,6 +164,8 @@ model Rank {
   name     String     @unique
   enchant  Enchant[]
   infusion Infusion[]
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("ranks")
 }
@@ -158,6 +177,8 @@ model Affix {
   enchant  Enchant[]
   infusion Infusion[]
   partholn Partholn[]
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("affixs")
 }
@@ -171,6 +192,8 @@ model Stat {
   grind         Grind[]
   itemSetEffect ItemSetEffect[]
   itemStats     ItemStats[]
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("stats")
 }
@@ -186,6 +209,8 @@ model Effect {
   infusion   Infusion? @relation(fields: [infusionId], references: [id], onDelete: Cascade)
   partholn   Partholn? @relation(fields: [partholnId], references: [id], onDelete: Cascade)
   stat       Stat      @relation(fields: [statId], references: [id])
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("effects")
 }
@@ -196,8 +221,10 @@ model Slot {
   value           String            @unique
   enchantSlot     EnchantSlot[]
   grindSlot       GrindSlot[]
-  itemSetSlotList ItemSetSlotList[]
   item            Item[]
+  itemSetSlotList ItemSetSlotList[]
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("slots")
 }
@@ -210,6 +237,8 @@ model EnchantSlot {
   enchant    Enchant?  @relation(fields: [enchantId], references: [id], onDelete: Cascade)
   infusion   Infusion? @relation(fields: [infusionId], references: [id], onDelete: Cascade)
   slot       Slot      @relation(fields: [slotId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
 
   @@map("enchantSlots")
 }
@@ -227,7 +256,8 @@ model Raid {
   itemDrop         ItemDrop[]
   bonusTargets     RaidBonusTarget[]
   raidTitle        RaidTitle          @relation(fields: [raidTitleId], references: [id])
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("raids")
 }
 
@@ -236,7 +266,8 @@ model RaidTitle {
   name String  @unique
   grid Grind[]
   raid Raid[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("raidTitles")
 }
 
@@ -248,7 +279,8 @@ model BossStat {
   type   StatType
   raid   Raid     @relation(fields: [raidId], references: [id], onDelete: Cascade)
   stat   Stat     @relation(fields: [statId], references: [id])
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("bossStats")
 }
 
@@ -258,7 +290,8 @@ model RaidBonusTarget {
   value  String
   raidId Int
   raid   Raid   @relation(fields: [raidId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("raidBonusTargets")
 }
 
@@ -270,7 +303,8 @@ model ItemDrop {
   boostOnly Boolean
   item      Item    @relation(fields: [itemId], references: [id])
   raid      Raid    @relation(fields: [raidId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("itemDrops")
 }
 
@@ -284,7 +318,8 @@ model EnchantDrop {
   infusion   Infusion? @relation(fields: [infusionId], references: [id], onDelete: Cascade)
   item       Item?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   raid       Raid?     @relation(fields: [raidId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@unique([itemId, enchantId])
   @@unique([raidId, enchantId])
   @@unique([raidId, itemId])
@@ -296,7 +331,8 @@ model BasicClearRewardName {
   id               Int                @id @default(autoincrement())
   name             String             @unique
   basicClearReward BasicClearReward[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("basicClearRewardNames")
 }
 
@@ -307,16 +343,21 @@ model BasicClearReward {
   raidId                 Int
   basicClearRewardName   BasicClearRewardName @relation(fields: [basicClearRewardNameId], references: [id])
   raid                   Raid                 @relation(fields: [raidId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("basicClearRewards")
 }
 
 model Character {
   id             Int              @id @default(autoincrement())
   name           String           @unique
-  image          String
+  image          String?
+  battleType     BattleType?
+  gender         Gender?
+  releaseDate    DateTime?        @db.Date
   characterSkill CharacterSkill[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("characters")
 }
 
@@ -324,9 +365,10 @@ model Skill {
   id             Int              @id @default(autoincrement())
   name           String           @unique
   description    String
-  image          String
+  image          String?
   characterSkill CharacterSkill[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("skills")
 }
 
@@ -336,8 +378,10 @@ model CharacterSkill {
   skillId     Int
   character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
   skill       Skill     @relation(fields: [skillId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("characters_skills")
+  @@unique([characterId, skillId])
 }
 
 model User {
@@ -359,7 +403,8 @@ model RefreshToken {
   expiresAt DateTime
   userId    String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("refreshToken")
 }
 
@@ -374,7 +419,8 @@ model Grind {
   grindIngredient GrindIngredient[]
   grindSlot       GrindSlot[]
   itemGrind       ItemGrind[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("grinds")
 }
 
@@ -384,7 +430,8 @@ model ItemGrind {
   itemId  Int
   grind   Grind @relation(fields: [grindId], references: [id], onDelete: Cascade)
   item    Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@unique([grindId, itemId])
   @@map("item_grinds")
 }
@@ -395,7 +442,8 @@ model GrindSlot {
   slotId  Int
   grind   Grind @relation(fields: [grindId], references: [id], onDelete: Cascade)
   slot    Slot  @relation(fields: [slotId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("grinds_slots")
 }
 
@@ -406,7 +454,8 @@ model GrindIngredient {
   quantity Int
   grind    Grind @relation(fields: [grindId], references: [id], onDelete: Cascade)
   item     Item  @relation(fields: [itemId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@unique([grindId, itemId])
   @@index([itemId])
   @@map("grinds_ingredients")
@@ -418,7 +467,8 @@ model ItemSet {
   itemSetBonus    ItemSetEffect[]
   itemSetList     ItemSetList[]
   itemSetSlotList ItemSetSlotList[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("item_sets")
 }
 
@@ -431,7 +481,8 @@ model ItemSetEffect {
   level     ItemSetLevel @relation(fields: [levelId], references: [id], onDelete: Cascade)
   set       ItemSet      @relation(fields: [setId], references: [id], onDelete: Cascade)
   stat      Stat         @relation(fields: [statId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("items_sets_effects")
 }
 
@@ -439,7 +490,8 @@ model ItemSetLevel {
   id            Int             @id @default(autoincrement())
   level         Int
   itemSetEffect ItemSetEffect[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("items_sets_level")
 }
 
@@ -447,7 +499,8 @@ model ItemSetNameList {
   id          Int           @id @default(autoincrement())
   name        String        @unique
   itemSetList ItemSetList[]
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("items_sets_name_list")
 }
 
@@ -457,7 +510,8 @@ model ItemSetSlotList {
   slotId Int
   set    ItemSet @relation(fields: [setId], references: [id], onDelete: Cascade)
   slot   Slot    @relation(fields: [slotId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@map("items_sets_slots_list")
 }
 
@@ -469,7 +523,8 @@ model ItemSetList {
   equipment     Item?           @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
   item          ItemSetNameList @relation(fields: [itemSetListId], references: [id], onDelete: Cascade)
   set           ItemSet         @relation(fields: [setId], references: [id], onDelete: Cascade)
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@index([setId])
   @@index([itemSetListId])
   @@index([equipmentId])
@@ -482,7 +537,8 @@ model recipes {
   materialId  Int
   quantity    Int
   description String?
-
+createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @default(now()) @map("updated_at")
   @@unique([resultId, materialId])
   @@index([materialId])
   @@index([resultId])
@@ -508,4 +564,14 @@ enum AffixType {
   SUFFIX
   INFUSION
   PARTHOLN
+}
+
+enum BattleType {
+  melee
+  ranged
+}
+
+enum Gender {
+  male
+  female
 }

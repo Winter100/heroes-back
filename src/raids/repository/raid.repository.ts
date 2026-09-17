@@ -1,15 +1,21 @@
+import { UpdateRaidDto } from './../dto/raid-update.dto';
 import { RaidCreateDto } from './../dto/raid-create.dto';
 import { Injectable } from '@nestjs/common';
-import { Prisma, Raid, RaidTitle } from '@prisma/client';
+import { Prisma, RaidTitle } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class RaidRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  findAllRaidTitles() {
+    return this.prisma.raidTitle.findMany();
+  }
+
   async findAllWithRelations() {
     return await this.prisma.raid.findMany({
       select: raidWithRelationsSelect,
+      orderBy: [{ raidTitle: { id: 'asc' } }, { id: 'asc' }],
     });
   }
 
@@ -21,37 +27,54 @@ export class RaidRepository {
     });
   }
 
-  async findBattle(battle: string) {
+  async findRaidById(raidId: number) {
+    return await this.prisma.raid.findUnique({
+      where: {
+        id: raidId,
+      },
+      select: raidWithRelationsSelect,
+    });
+  }
+  async findRaidByName(battle: string) {
     return await this.prisma.raid.findUnique({
       where: {
         battle,
       },
+      select: raidWithRelationsSelect,
     });
   }
 
-  async updateBattleImage(battle: string, imgaeUrl: string) {
-    return await this.prisma.raid.update({
-      where: { battle: battle },
+  upsertRaidDetil(raidId: number, data: Prisma.RaidUpdateInput) {
+    return this.prisma.raid.update({ where: { id: raidId }, data });
+  }
+
+  updateRaid(raidId: number, updateRaidDto: UpdateRaidDto, image?: string) {
+    return this.prisma.raid.update({
+      where: { id: raidId },
       data: {
-        image: imgaeUrl,
+        raidTitleId: updateRaidDto.raidId,
+        battle: updateRaidDto.battle,
+        boss: updateRaidDto.boss,
+        level: updateRaidDto.level,
+        image,
       },
     });
   }
 
-  async createRaid(
-    raidTitleId: number,
-    raidCreateDto: RaidCreateDto,
-    image: string,
-  ): Promise<Raid> {
+  async createRaid(raidCreateDto: RaidCreateDto, image?: string) {
     return await this.prisma.raid.create({
       data: {
-        raidTitleId,
+        raidTitleId: raidCreateDto.raidId,
         battle: raidCreateDto.battle,
         boss: raidCreateDto.boss,
         level: raidCreateDto.level,
         image,
       },
     });
+  }
+
+  delete(raidId: number) {
+    return this.prisma.raid.delete({ where: { id: raidId } });
   }
 
   async createRaidTitle(raidTitle: string): Promise<RaidTitle> {
@@ -65,6 +88,27 @@ export class RaidRepository {
       },
     });
   }
+
+  async findStatistics() {
+    const [count, raid] = await Promise.all([
+      this.prisma.raid.count(),
+      this.prisma.raidTitle.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: {
+              raid: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      count,
+      raids: raid.map((r) => ({ name: r.name, count: r._count.raid })),
+    };
+  }
 }
 
 const raidWithRelationsSelect = Prisma.validator<Prisma.RaidSelect>()({
@@ -73,15 +117,12 @@ const raidWithRelationsSelect = Prisma.validator<Prisma.RaidSelect>()({
   boss: true,
   image: true,
   level: true,
-  raidTitle: {
-    select: {
-      name: true,
-    },
-  },
+  raidTitle: true,
   bossStat: {
     select: {
       stat: {
         select: {
+          id: true,
           name: true,
           image: true,
         },

@@ -42,7 +42,7 @@ export class NexonService {
         allData.push(data);
         nextCursor = data.next_cursor;
 
-        if (nextCursor) await delay(300);
+        if (nextCursor) await delay(500);
       } while (nextCursor);
 
       return allData;
