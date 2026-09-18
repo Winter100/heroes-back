@@ -34,7 +34,8 @@ export class AuthController {
     res.cookie('refreshToken', refresh_token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'none',
+      sameSite: 'lax',
+      domain: 'heroes-dev.com',
       expires: expiresAt,
       path: '/',
     });
@@ -55,7 +56,8 @@ export class AuthController {
       res.cookie('refreshToken', refresh_token, {
         httpOnly: true,
         secure: true,
-        sameSite: 'none',
+        sameSite: 'lax',
+        domain: 'heroes-dev.com',
         expires: expiresAt,
         path: '/',
       });
@@ -64,7 +66,8 @@ export class AuthController {
       res.clearCookie('refreshToken', {
         httpOnly: true,
         secure: true,
-        sameSite: 'none',
+        sameSite: 'lax',
+        domain: 'heroes-dev.com',
         path: '/',
       });
 
@@ -90,7 +93,8 @@ export class AuthController {
     res.clearCookie('refreshToken', {
       httpOnly: true,
       secure: true,
-      sameSite: 'none',
+      sameSite: 'lax',
+      domain: 'heroes-dev.com',
       path: '/',
     });
 
