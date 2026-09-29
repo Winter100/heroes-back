@@ -29,7 +29,7 @@ export class AuthController {
     @Request() req: { user: AuthUser },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { access_token, refresh_token, expiresAt } =
+    const { access_token, refresh_token, expiresAt, name, role } =
       await this.authService.signin(req.user);
     res.cookie('refreshToken', refresh_token, {
       httpOnly: true,
@@ -39,7 +39,7 @@ export class AuthController {
       expires: expiresAt,
       path: '/',
     });
-    return { accessToken: access_token };
+    return { accessToken: access_token, user: { name, role } };
   }
 
   // 리프레쉬 토큰 및 액세스 토큰 갱신
@@ -51,7 +51,7 @@ export class AuthController {
   ) {
     try {
       const user = await this.authService.findUserByUserId(req.user.userId);
-      const { access_token, refresh_token, expiresAt } =
+      const { access_token, refresh_token, expiresAt, name, role } =
         await this.authService.signin(user);
       res.cookie('refreshToken', refresh_token, {
         httpOnly: true,
@@ -61,7 +61,7 @@ export class AuthController {
         expires: expiresAt,
         path: '/',
       });
-      return { accessToken: access_token };
+      return { accessToken: access_token, user: { name, role } };
     } catch (error) {
       res.clearCookie('refreshToken', {
         httpOnly: true,
@@ -75,7 +75,7 @@ export class AuthController {
     }
   }
 
-  // 회원 가입
+  // 회원 가입 (관리자만 아이디 생성 가능)
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('signup')

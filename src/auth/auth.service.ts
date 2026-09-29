@@ -14,6 +14,7 @@ import { AuthJwtPayload } from './types/auth-jwt-payload';
 import * as argon2 from 'argon2';
 import { TOKEN_KEY } from './constant/key';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
+import { $Enums } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -49,6 +50,8 @@ export class AuthService {
   async signin(user: AuthUser): Promise<{
     access_token: string;
     refresh_token: string;
+    name: string;
+    role: $Enums.UserRole;
     expiresAt: Date;
   }> {
     this.logger.info({ userId: user.id }, 'login start');
@@ -60,7 +63,13 @@ export class AuthService {
     );
 
     this.logger.info({ userId: user.id, expiresAt }, 'login succeeded');
-    return { access_token, refresh_token, expiresAt };
+    return {
+      access_token,
+      refresh_token,
+      expiresAt,
+      name: user.name,
+      role: user.role,
+    };
   }
 
   /**
