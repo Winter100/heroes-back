@@ -1,10 +1,10 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 
 @Injectable()
-export class RedisService implements OnModuleInit, OnModuleDestroy {
+export class RedisService implements OnModuleDestroy {
   private readonly redis: Redis;
 
   constructor(
@@ -19,7 +19,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.redis = new Redis(url, {
-      maxRetriesPerRequest: 3,
+      enableOfflineQueue: false,
+      connectTimeout: 10000,
+      commandTimeout: 3000,
+      maxRetriesPerRequest: 1,
       enableReadyCheck: true,
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 5000, 60000);
@@ -44,37 +47,39 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async onModuleInit(): Promise<void> {
-    try {
-      await this.redis.ping();
-
-      this.logger.info('redis connected');
-    } catch (error: unknown) {
-      this.logger.warn(
-        { err: error },
-        'redis connection failed during startup',
-      );
-    }
-  }
-
-  async onModuleDestroy(): Promise<void> {
-    await this.redis.quit();
+  onModuleDestroy(): void {
+    this.redis.disconnect();
     this.logger.info('Redis connection closed');
   }
 
-  async getOrSet<T>(key: string, ttl: number, fetchFn: () => Promise<T>) {
+  async getOrSet<T>(
+    key: string,
+    ttl: number,
+    fetchFn: () => Promise<T>,
+  ): Promise<T> {
+    if (this.redis.status !== 'ready') {
+      this.logger.warn(
+        { key, status: this.redis.status },
+        'redis unavailable; querying DB',
+      );
+      return fetchFn();
+    }
+
     try {
       const cached = await this.redis.get(key);
-      if (cached !== null && cached !== undefined) {
+      if (cached !== null) {
         this.logger.debug({ key }, 'redis cache hit');
         return JSON.parse(cached) as T;
       }
     } catch (err: unknown) {
-      this.logger.error({ err, key }, 'redis cache get failed');
+      this.logger.warn({ err, key }, 'redis cache get failed; querying DB');
+      return fetchFn();
     }
 
     this.logger.debug({ key }, 'redis cache miss');
     const data = await fetchFn();
+
+    if (this.redis.status !== 'ready') return data;
 
     try {
       const serialized = JSON.stringify(data);
