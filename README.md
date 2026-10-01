@@ -9,16 +9,16 @@
 [![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?logo=redis&logoColor=white)](https://redis.io/)
 [![Supabase](https://img.shields.io/badge/Supabase-Storage-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
-## 목차
+## 프로젝트 정보
 
-- [주요 기능](#주요-기능)
-- [아키텍처](#아키텍처)
-- [핵심 데이터 모델](#핵심-데이터-모델)
-- [기술적 의사결정](#기술적-의사결정)
-- [API 요약](#api-요약)
-- [로컬 실행](#로컬-실행)
-- [프로젝트 구조](#프로젝트-구조)
-- [향후 개선](#향후-개선)
+| 항목        | 내용                                     |
+| ----------- | ---------------------------------------- |
+| 프로젝트 명 | 망스비 백엔드                            |
+| 개발 기간   | 2026-06-17 ~ 2026-09-17                  |
+| 참여 인원   | 1명                                      |
+| 기여 범위   | 모든 기능                                |
+| 깃허브      | https://github.com/Winter100/heroes-back |
+| 배포 URL    | https://api.heroes-dev.com               |
 
 ## 주요 기능
 
@@ -33,17 +33,7 @@
 
 ## 아키텍처
 
-```mermaid
-flowchart LR
-    Client[Web Client] -->|REST API| API[NestJS API]
-    API --> Auth[JWT 인증 / RBAC]
-    API --> Redis[(Redis)]
-    API --> Prisma[Prisma ORM]
-    Prisma --> DB[(PostgreSQL)]
-    API --> Storage[Supabase Storage]
-    API --> Nexon[Nexon Open API]
-    API -->|Revalidation 요청| Frontend[Next.js Frontend]
-```
+![아키텍처](public/readme/아키텍처.png)
 
 ### 조회와 변경 흐름
 
@@ -67,22 +57,17 @@ flowchart TD
 
 전체 스키마는 게임 정보의 중복을 줄이고 강화 단계, 제작 재료, 드롭 정보처럼 다대다 관계가 필요한 데이터를 연결 모델로 표현합니다.
 
-```mermaid
-erDiagram
-    CHARACTER ||--o{ CHARACTER_SKILL : has
-    SKILL ||--o{ CHARACTER_SKILL : belongs_to
+### 단순화한 아이템 모델
 
-    ITEM ||--o{ EQUIPMENT_STEP : has
-    EQUIPMENT_STEP ||--o{ ITEM_RECIPE : result
-    EQUIPMENT_STEP ||--o{ ITEM_RECIPE : material
+![아이템 모델](public/readme/아이템%20모델.svg)
 
-    RAID ||--o{ ITEM_DROP : drops
-    ITEM ||--o{ ITEM_DROP : dropped_as
+### 단순화한 레이드 모델
 
-    RAID ||--o{ ENCHANT_DROP : drops
-    ITEM ||--o{ ENCHANT_DROP : contains
-    ENCHANT ||--o{ ENCHANT_DROP : registered_as
-```
+![레이드 모델](public/readme/레이드%20모델.svg)
+
+### 단순화한 인챈트 모델
+
+![인챈트 모델](public/readme/인챈트%20모델.svg)
 
 ## 기술적 의사결정
 
@@ -90,40 +75,91 @@ erDiagram
 
 하나의 아이템은 여러 강화 단계와 능력치, 제작 재료를 가질 수 있고 레이드·인챈트 데이터도 서로 연결됩니다. 이를 별도 모델과 복합 유니크 제약으로 표현해 중복과 잘못된 조합을 제한했습니다. 아이템과 기본 강화 단계의 동시 생성, 제작 재료 교체처럼 여러 쓰기가 하나의 작업인 경우 Prisma transaction을 사용해 일부 데이터만 반영되는 상황을 방지했습니다.
 
+```js
+// 아이템 생성 트랜잭션
+  async create(createItemDto: CreateItemDto, image?: string) {
+    return await this.prismaService.$transaction(async (tx) => {
+      const createdItem = await tx.item.create({
+        data: {
+          ...createItemDto,
+          image,
+        },
+      });
+
+      await tx.equipmentStep.create({
+        data: {
+          itemId: createdItem.id,
+          stepName: '0',
+        },
+      });
+
+      return createdItem;
+    });
+  }
+```
+
+구현 근거: [아이템 레퍼지토리](https://github.com/Winter100/heroes-back/blob/main/src/items/repository/item.repository.ts)
+
 ### cache-aside와 이벤트 기반 무효화
 
 목록과 통계처럼 읽기 비중이 높은 결과는 Redis에 캐시하고, Redis 장애가 발생해도 원본 조회를 계속할 수 있도록 캐시 읽기·쓰기 실패를 로깅한 뒤 데이터베이스 조회 결과를 반환합니다. 변경 로직은 캐시 구현에 직접 의존하지 않고 도메인 이벤트를 발행하며, 이벤트 핸들러가 관련 캐시 키를 제거합니다.
+
+```js
+async getOrSet<T>(
+    key: string,
+    ttl: number,
+    fetchFn: () => Promise<T>,
+  ): Promise<T> {
+    if (this.redis.status !== 'ready') {
+      return fetchFn();
+    }
+
+    try {
+      const cached = await this.redis.get(key);
+      if (cached !== null) {
+        return JSON.parse(cached) as T;
+      }
+    } catch (err: unknown) {
+      return fetchFn();
+    }
+    const data = await fetchFn();
+
+    if (this.redis.status !== 'ready') return data;
+
+    try {
+      const serialized = JSON.stringify(data);
+      await this.redis.set(key, serialized, 'EX', ttl);
+    } catch (err: unknown) {
+    }
+    return data;
+  }
+```
+
+구현 근거: [Redis Service](https://github.com/Winter100/heroes-back/blob/main/src/redis/redis.service.ts), [이벤트로 캐시 제거](https://github.com/Winter100/heroes-back/blob/main/src/redis/cache-invalidation.service.ts)
 
 ### access token과 refresh token 분리
 
 API 요청은 Bearer access token으로 인증하고 refresh token은 JavaScript에서 접근할 수 없는 HttpOnly 쿠키로 전달합니다. refresh token 원문 대신 Argon2 해시를 PostgreSQL에 저장하고, 재발급 시 검증한 뒤 토큰을 교체하도록 구성해 저장소 노출 시 위험을 낮췄습니다.
 
-### 공개 API와 관리자 API 분리
+```js
+  @UseGuards(LocalAuthGuard)
+  @Post('signin')
+  async login(
+    @Request() req: { user: AuthUser },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const { access_token, refresh_token, expiresAt, name, role } =
+      await this.authService.signin(req.user);
+    res.cookie(
+      REFRESH_TOKEN_TITLE,
+      refresh_token,
+      this.refreshCookieOptions({ expires: expiresAt }),
+    );
+    return { accessToken: access_token, user: { name, role } };
+  }
+```
 
-조회 컨트롤러와 관리자 컨트롤러를 분리했습니다. 관리자 API에는 JWT guard와 `ADMIN` 역할 검사를 함께 적용해 인증과 권한 확인의 책임을 공통 계층으로 모았습니다. 요청 DTO는 whitelist, 형 변환, 허용되지 않은 필드 거부를 전역 적용합니다.
-
-### 운영을 고려한 로깅과 오류 응답
-
-요청의 `X-Request-Id`를 검증하거나 새 UUID를 생성해 응답에도 전달합니다. 비밀번호, 토큰, Authorization 및 Cookie 헤더는 로그에서 마스킹하고 응답 상태에 따라 로그 레벨을 구분합니다. 처리되지 않은 예외도 전역 필터에서 동일한 응답 형태로 변환합니다.
-
-## API 요약
-
-| 도메인      | 대표 경로           | 주요 기능                                  | 접근 권한                     |
-| ----------- | ------------------- | ------------------------------------------ | ----------------------------- |
-| 인증        | `/auth`             | 로그인, 토큰 재발급, 로그아웃, 사용자 등록 | 공개 / refresh token / 관리자 |
-| 캐릭터      | `/characters`       | 캐릭터·스킬 조회                           | 공개                          |
-| 캐릭터 관리 | `/characters-admin` | 캐릭터·스킬 생성, 수정, 삭제               | 관리자                        |
-| 아이템      | `/items`            | 아이템, 강화 단계, 제작법, 세트 옵션 조회  | 공개                          |
-| 아이템 관리 | `/items-admin`      | 아이템·강화 단계·제작법 관리               | 관리자                        |
-| 레이드      | `/raids`            | 레이드, 보상, 드롭 정보 조회               | 공개                          |
-| 레이드 관리 | `/raids-admin`      | 레이드와 상세 정보 관리                    | 관리자                        |
-| 인챈트      | `/enchants`         | 인챈트, 연마, 거래소 시세 조회             | 공개                          |
-| 인챈트 관리 | `/enchants-admin`   | 인챈트 상세 정보 관리                      | 관리자                        |
-| 통계        | `/statistics`       | 도메인별 집계 정보 조회                    | 공개                          |
-| 공지        | `/notice`           | Nexon 공지·이벤트·패치 노트 조회           | 공개                          |
-| 상태 확인   | `/health`           | 애플리케이션 상태 확인                     | 공개                          |
-
-### 인증 흐름
+#### 인증 흐름
 
 ```mermaid
 sequenceDiagram
@@ -142,6 +178,68 @@ sequenceDiagram
     API->>DB: 저장된 refresh token 제거
     API-->>Client: refresh cookie 제거
 ```
+
+구현 근거: [Auth Controller](https://github.com/Winter100/heroes-back/blob/main/src/auth/auth.controller.ts), [Auth Service](https://github.com/Winter100/heroes-back/blob/main/src/auth/auth.service.ts)
+
+### 공개 API와 관리자 API 분리
+
+조회 컨트롤러와 관리자 컨트롤러를 분리했습니다. 관리자 API에는 JWT guard와 `ADMIN` 역할 검사를 함께 적용해 인증과 권한 확인의 책임을 공통 계층으로 모았습니다. 요청 DTO는 whitelist, 형 변환, 허용되지 않은 필드 거부를 전역 적용합니다.
+
+```js
+// 관리자 API
+@Roles(UserRole.ADMIN)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller('items-admin')
+export class ItemAdminController {
+  constructor(private readonly itemAdminService: ItemAdminService) {}
+  @UseInterceptors(FileInterceptor('image'))
+  @Post()
+  createItem(
+    @Body() createItemDto: CreateItemDto,
+    @UploadedFile(ImageValidationPipe) image?: Express.Multer.File,
+  ) {
+    return this.itemAdminService.createItem(createItemDto, image);
+  }
+}
+```
+
+```js
+// 유저용 API
+@Controller('items')
+export class ItemController {
+  constructor(private readonly itemService: ItemService) {}
+
+  @Get('all')
+  findAllItems() {
+    return this.itemService.findAllItems();
+  }
+}
+```
+
+구현 근거: [Item Admin Controller](https://github.com/Winter100/heroes-back/blob/main/src/items/controller/items-admin.controller.ts), [Item Controller](https://github.com/Winter100/heroes-back/blob/main/src/items/controller/items.controller.ts)
+
+### 운영을 고려한 로깅과 오류 응답
+
+요청의 `X-Request-Id`를 검증하거나 새 UUID를 생성해 응답에도 전달합니다. 비밀번호, 토큰, Authorization 및 Cookie 헤더는 로그에서 마스킹하고 응답 상태에 따라 로그 레벨을 구분합니다. 처리되지 않은 예외도 전역 필터에서 동일한 응답 형태로 변환합니다.
+
+구현 근거: [Exception Filter](https://github.com/Winter100/heroes-back/blob/main/src/all-exceptions.filter.ts), [App Module](https://github.com/Winter100/heroes-back/blob/main/src/app.module.ts)
+
+## API 요약
+
+| 도메인      | 대표 경로           | 주요 기능                                  | 접근 권한                     |
+| ----------- | ------------------- | ------------------------------------------ | ----------------------------- |
+| 인증        | `/auth`             | 로그인, 토큰 재발급, 로그아웃, 사용자 등록 | 공개 / refresh token / 관리자 |
+| 캐릭터      | `/characters`       | 캐릭터·스킬 조회                           | 공개                          |
+| 캐릭터 관리 | `/characters-admin` | 캐릭터·스킬 생성, 수정, 삭제               | 관리자                        |
+| 아이템      | `/items`            | 아이템, 강화 단계, 제작법, 세트 옵션 조회  | 공개                          |
+| 아이템 관리 | `/items-admin`      | 아이템·강화 단계·제작법 관리               | 관리자                        |
+| 레이드      | `/raids`            | 레이드, 보상, 드롭 정보 조회               | 공개                          |
+| 레이드 관리 | `/raids-admin`      | 레이드와 상세 정보 관리                    | 관리자                        |
+| 인챈트      | `/enchants`         | 인챈트, 연마, 거래소 시세 조회             | 공개                          |
+| 인챈트 관리 | `/enchants-admin`   | 인챈트 상세 정보 관리                      | 관리자                        |
+| 통계        | `/statistics`       | 도메인별 집계 정보 조회                    | 공개                          |
+| 공지        | `/notice`           | Nexon 공지·이벤트·패치 노트 조회           | 공개                          |
+| 상태 확인   | `/health`           | 애플리케이션 상태 확인                     | 공개                          |
 
 ## 로컬 실행
 
@@ -164,8 +262,6 @@ npm run start:dev
 ```
 
 서버는 `PORT`가 지정되지 않으면 `http://localhost:8080`에서 실행됩니다. `npm install`의 `postinstall` 단계에서 Prisma Client를 생성합니다.
-
-> 현재 refresh token 쿠키의 domain과 secure 옵션은 배포 도메인을 기준으로 설정되어 있습니다. 로컬 브라우저에서 인증 흐름을 확인하려면 실행 환경에 맞는 쿠키 설정이 필요합니다.
 
 ### 환경 변수
 
