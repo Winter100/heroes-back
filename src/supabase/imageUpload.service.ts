@@ -35,7 +35,7 @@ export class ImageUploadService {
     }
 
     const processedImageBuffer = await toWebp(file.buffer);
-    const fileName = generateFileName(file.originalname);
+    const fileName = generateFileName();
 
     const imageUrl = await this.uploadFile(
       bucket,
