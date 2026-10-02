@@ -12,7 +12,7 @@ export class UsersService {
 
     const user = await this.findUserByEmail(email);
 
-    if (user) throw new BadRequestException();
+    if (user) throw new BadRequestException('이미 존재하는 이메일 입니다.');
 
     const hashedPassword = await PasswordHasher.hash(password);
 
