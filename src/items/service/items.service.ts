@@ -179,14 +179,26 @@ export class ItemService {
         const recipes = await this.itemRepository.findItemRecipeSSG();
         if (recipes.length === 0)
           throw new NotFoundException('레시피가 없습니다.');
-        const data = ItemRecipeMapper.toSSGResponse(recipes);
-        return data;
+        return ItemRecipeMapper.toSSGResponse(recipes);
       },
     );
   }
 
   /**
-   * 특정 아이템 레시피 조회
+   * 특정 아이템 이름으로 레시피 조회
+   * @returns
+   */
+  async getItemRecipeByItemName(itemName: string) {
+    const recipeSSG = await this.getItemRecipeSSG();
+
+    const stepId = recipeSSG.find((recipe) => recipe.name === itemName)?.id;
+    if (!stepId) throw new NotFoundException('해당 Step이 없습니다.');
+
+    return this.getItemRecipeByStepId(stepId);
+  }
+
+  /**
+   * 특정 StepId로 레시피 조회
    * @returns
    */
   async getItemRecipeByStepId(stepId: number) {

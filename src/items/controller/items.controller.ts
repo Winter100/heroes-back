@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import { SearchItemDto } from '../dto/search-item.dto';
 import { ItemService } from '../service/items.service';
@@ -54,6 +54,13 @@ export class ItemController {
   @Get('recipe')
   getItemRecipeTable() {
     return this.itemService.getItemRecipeTable();
+  }
+
+  // 개별 레시피 조회
+  @Get('recipe/name/:itemName')
+  getItemRecipeByItemName(@Param('itemName') itemName: string) {
+    console.log('itemName', itemName);
+    return this.itemService.getItemRecipeByItemName(itemName);
   }
 
   // 개별 레시피 조회
