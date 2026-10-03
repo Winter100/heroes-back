@@ -8,6 +8,7 @@ export class PartholnRepository {
   async findPartholn() {
     return await this.prismaService.partholn.findMany({
       select: PartholnWithRelationsSelect,
+      orderBy: { rank: 'asc' },
     });
   }
 }
