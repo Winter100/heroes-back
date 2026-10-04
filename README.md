@@ -299,7 +299,6 @@ npm run start:dev
 | `npm run migrate:dev`    | 개발 데이터베이스 migration 생성·적용   |
 | `npm run migrate:deploy` | 운영 데이터베이스에 기존 migration 적용 |
 | `npm run lint`           | ESLint 검사 및 자동 수정                |
-| `npm run test`           | Jest 테스트 실행                        |
 
 ## 프로젝트 구조
 
