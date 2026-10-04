@@ -7,6 +7,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { LocalAuthGuard } from './guards/local-auth.guard';
 import { SignUpDto } from './dto/signUp.dto';
 import { AuthService } from './auth.service';
@@ -15,12 +16,23 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from './guards/jwt-token.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
-import { Response } from 'express';
+import { CookieOptions, Response } from 'express';
 import { RefreshAuthGuard } from './guards/refresh-token.guard';
+
+const REFRESH_TOKEN_TITLE = 'refreshToken';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly cookieDomain: string;
+
+  constructor(
+    private readonly authService: AuthService,
+    configService: ConfigService,
+  ) {
+    const domain = configService.get<string>('DOMAIN')?.trim();
+    if (!domain) throw new Error('DOMAIN is not defined');
+    this.cookieDomain = domain;
+  }
 
   // 로그인
   @UseGuards(LocalAuthGuard)
@@ -29,17 +41,14 @@ export class AuthController {
     @Request() req: { user: AuthUser },
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { access_token, refresh_token, expiresAt } =
+    const { access_token, refresh_token, expiresAt, name, role } =
       await this.authService.signin(req.user);
-    res.cookie('refreshToken', refresh_token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'lax',
-      domain: 'heroes-dev.com',
-      expires: expiresAt,
-      path: '/',
-    });
-    return { accessToken: access_token };
+    res.cookie(
+      REFRESH_TOKEN_TITLE,
+      refresh_token,
+      this.refreshCookieOptions({ expires: expiresAt }),
+    );
+    return { accessToken: access_token, user: { name, role } };
   }
 
   // 리프레쉬 토큰 및 액세스 토큰 갱신
@@ -49,33 +58,18 @@ export class AuthController {
     @Request() req: { user: { userId: string } },
     @Res({ passthrough: true }) res: Response,
   ) {
-    try {
-      const user = await this.authService.findUserByUserId(req.user.userId);
-      const { access_token, refresh_token, expiresAt } =
-        await this.authService.signin(user);
-      res.cookie('refreshToken', refresh_token, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        domain: 'heroes-dev.com',
-        expires: expiresAt,
-        path: '/',
-      });
-      return { accessToken: access_token };
-    } catch (error) {
-      res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        domain: 'heroes-dev.com',
-        path: '/',
-      });
-
-      throw error;
-    }
+    const user = await this.authService.findUserByUserId(req.user.userId);
+    const { access_token, refresh_token, expiresAt, name, role } =
+      await this.authService.signin(user);
+    res.cookie(
+      REFRESH_TOKEN_TITLE,
+      refresh_token,
+      this.refreshCookieOptions({ expires: expiresAt }),
+    );
+    return { accessToken: access_token, user: { name, role } };
   }
 
-  // 회원 가입
+  // 회원 가입 (관리자만 아이디 생성 가능)
   @Roles(UserRole.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('signup')
@@ -90,14 +84,18 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.authService.signOut(req.id);
-    res.clearCookie('refreshToken', {
+    res.clearCookie(REFRESH_TOKEN_TITLE, this.refreshCookieOptions());
+    return { message: '로그아웃 되었습니다' };
+  }
+
+  private refreshCookieOptions(arg: CookieOptions = {}): CookieOptions {
+    return {
       httpOnly: true,
       secure: true,
       sameSite: 'lax',
-      domain: 'heroes-dev.com',
+      domain: this.cookieDomain,
       path: '/',
-    });
-
-    return { message: '로그아웃 되었습니다' };
+      ...arg,
+    };
   }
 }

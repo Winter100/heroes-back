@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRole } from '@prisma/client';
 import { Observable } from 'rxjs';
@@ -24,6 +29,13 @@ export class RolesGuard implements CanActivate {
       .switchToHttp()
       .getRequest<{ user: { role: UserRole } }>();
 
-    return requiredRoles.some((role) => user.role === role);
+    const hasRequiredRole =
+      user !== undefined && requiredRoles.some((role) => user.role === role);
+
+    if (!hasRequiredRole) {
+      throw new ForbiddenException('관리자만 접근할 수 있습니다.');
+    }
+
+    return true;
   }
 }
