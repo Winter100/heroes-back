@@ -249,13 +249,18 @@ export class ItemAdminService {
    */
   async upsertRecipe(stepId: number, upsertRecipeDto: UpsertRecipeDto) {
     this.logger.info({ stepId }, 'upsert recipe start');
-    await this.itemService.findStepByStepId(stepId);
-    const result = await this.itemRepository.upsertRecipe(
-      stepId,
-      upsertRecipeDto,
-    );
+    await this.itemRepository.upsertRecipe(stepId, upsertRecipeDto);
+
     this.eventEmitter.emit(ItemUpdatedEvent.name, new ItemUpdatedEvent());
     this.logger.info({ stepId }, 'upsert recipe succeeded');
-    return result;
+    return { message: '레시피가 등록 되었습니다.' };
+  }
+
+  /**
+   * 관리자용 레시피 조회
+   * - 제작 재료가 없어도 반환
+   */
+  async getItemRecipeTable() {
+    return this.itemService.getItemRecipeTable(false);
   }
 }

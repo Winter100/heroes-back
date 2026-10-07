@@ -96,7 +96,13 @@ export class ItemAdminController {
     return this.itemAdminService.deleteItem(itemId);
   }
 
-  // 아이템 레시피 조회
+  // 관리자용 모든 레시피 테이블 조회
+  @Get('recipe')
+  getItemRecipeTable() {
+    return this.itemAdminService.getItemRecipeTable();
+  }
+
+  // 아이템 레시피 등록
   @Post('recipe/:stepId')
   createRecipe(
     @IntParam('stepId', '올바른 stepId를 입력해주세요') stepId: number,

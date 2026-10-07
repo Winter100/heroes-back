@@ -65,18 +65,20 @@ export class ItemRepository {
     });
   }
 
-  upsertRecipe(stepId: number, createRecipeDto: UpsertRecipeDto) {
-    const deleteMany = this.prismaService.itemRecipe.deleteMany({
-      where: { resultId: stepId },
+  async upsertRecipe(stepId: number, createRecipeDto: UpsertRecipeDto) {
+    return await this.prismaService.$transaction(async (tx) => {
+      await tx.itemRecipe.deleteMany({
+        where: { resultId: stepId },
+      });
+
+      await tx.itemRecipe.createMany({
+        data: createRecipeDto.recipes.map((recipe) => ({
+          resultId: stepId,
+          materialId: recipe.stepId,
+          quantity: recipe.quantity,
+        })),
+      });
     });
-    const createMany = this.prismaService.itemRecipe.createMany({
-      data: createRecipeDto.recipes.map((recipe) => ({
-        resultId: stepId,
-        materialId: recipe.stepId,
-        quantity: recipe.quantity,
-      })),
-    });
-    return this.prismaService.$transaction([deleteMany, createMany]);
   }
 
   async update(id: number, updateItemDto: UpdateItemDto, image?: string) {
@@ -283,9 +285,9 @@ export class ItemRepository {
   }
 
   // 아이템 레시피 테이블 조회
-  async findItemRecipeTable() {
+  async findItemRecipeTable(filter?: Prisma.EquipmentStepWhereInput) {
     return await this.prismaService.equipmentStep.findMany({
-      where: itemRecipeFilter,
+      where: filter,
       select: itemRecipeTableSelect,
     });
   }

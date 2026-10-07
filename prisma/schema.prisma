@@ -531,6 +531,7 @@ createdAt DateTime @default(now()) @map("created_at")
   @@map("items_sets_list")
 }
 
+// 사용되지 않는 모델, 삭제 예정
 model recipes {
   id          Int     @id @default(autoincrement())
   resultId    Int
