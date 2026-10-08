@@ -1,3 +1,4 @@
+import { CreateGrindDto } from './../dto/grind-create.dto';
 import { RedisService } from './../../redis/redis.service';
 import { ItemService } from './items.service';
 import { ImageUploadService } from 'src/supabase/imageUpload.service';
@@ -19,6 +20,7 @@ import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { EventEmitter2 } from 'eventemitter2';
 import { ItemUpdatedEvent } from '../event/item-updated.event';
 import { RedisKeys } from 'src/redis/redis-keys.constant';
+import { GrindCombineDto } from '../dto/grind-combine.dto';
 
 @Injectable()
 export class ItemAdminService {
@@ -262,5 +264,35 @@ export class ItemAdminService {
    */
   async getItemRecipeTable() {
     return this.itemService.getItemRecipeTable(false);
+  }
+
+  /**
+   * 아이템에 연마 등록
+   */
+  async createGrind(createGrindDto: CreateGrindDto) {
+    return this.itemRepository.createGrind(createGrindDto);
+  }
+
+  /**
+   * 관리자용 모든 연마 정보 조회
+   */
+  async findAllGrind() {
+    return this.itemRepository.findAllGrind();
+  }
+
+  /**
+   * 아이템과 연마 ID 연결
+   * - item의 모든 연마 정보 삭제
+   * - item과 grindIds를 다시 생성
+   */
+  async combineGrind(itemId: number, grindIds: GrindCombineDto) {
+    return this.itemRepository.combineGrind(itemId, grindIds.ids);
+  }
+
+  /**
+   * 해당 아이템에 연결되어 있는 연마 ID조회
+   */
+  async findGrindById(itemId: number) {
+    return this.itemRepository.findGrindById(itemId);
   }
 }
