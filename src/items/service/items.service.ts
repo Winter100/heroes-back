@@ -17,6 +17,7 @@ import { sortRecipe } from '../utils/utils';
 import { ItemRecipeMapper } from '../mapper/item-recipe-mapper';
 import { ItemMapper } from '../mapper/items-mapper';
 import { RedisKeys } from 'src/redis/redis-keys.constant';
+import { Prisma } from '@prisma/client';
 
 @Injectable()
 export class ItemService {
@@ -154,12 +155,21 @@ export class ItemService {
    * 모든 아이템 레시피 테이블 조회
    * @returns
    */
-  async getItemRecipeTable() {
+  async getItemRecipeTable(recipesAsResult: boolean = true) {
     return this.redisService.getOrSet(
       RedisKeys.recipeList(),
       60 * 60,
       async () => {
-        const recipes = await this.itemRepository.findItemRecipeTable();
+        const itemRecipeFilter: Prisma.EquipmentStepWhereInput = {};
+
+        if (recipesAsResult) {
+          itemRecipeFilter.recipesAsResult = {
+            some: {},
+          };
+        }
+
+        const recipes =
+          await this.itemRepository.findItemRecipeTable(itemRecipeFilter);
         if (recipes.length === 0)
           throw new NotFoundException('레시피가 없습니다.');
         return sortRecipe(ItemRecipeMapper.toResponse(recipes));
@@ -172,16 +182,9 @@ export class ItemService {
    * @returns
    */
   async getItemRecipeSSG() {
-    return this.redisService.getOrSet(
-      RedisKeys.recipeSSG(),
-      60 * 60,
-      async () => {
-        const recipes = await this.itemRepository.findItemRecipeSSG();
-        if (recipes.length === 0)
-          throw new NotFoundException('레시피가 없습니다.');
-        return ItemRecipeMapper.toSSGResponse(recipes);
-      },
-    );
+    const recipes = await this.itemRepository.findItemRecipeSSG();
+    if (recipes.length === 0) throw new NotFoundException('레시피가 없습니다.');
+    return ItemRecipeMapper.toSSGResponse(recipes);
   }
 
   /**

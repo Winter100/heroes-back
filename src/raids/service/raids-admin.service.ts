@@ -164,7 +164,10 @@ export class RaidAdminService {
       },
     };
     this.logger.info({ raidId }, 'start detail upsert raid succeeded');
-    return this.raidRepository.upsertRaidDetil(raidId, raidDetailData);
+    await this.raidRepository.upsertRaidDetil(raidId, raidDetailData);
+    this.eventEmitter.emit(RaidUpdatedEvent.name);
+
+    return { message: '레이드 수정에 성공했습니다.' };
   }
 
   /**

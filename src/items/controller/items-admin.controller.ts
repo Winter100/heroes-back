@@ -22,6 +22,8 @@ import {
 } from '../dto/item-create.dto';
 import { UpdateItemDto } from '../dto/item-update.dto';
 import { IntParam } from 'src/common/decorators/int.param';
+import { CreateGrindDto } from '../dto/grind-create.dto';
+import { GrindCombineDto } from '../dto/grind-combine.dto';
 
 @Roles(UserRole.ADMIN)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -96,12 +98,45 @@ export class ItemAdminController {
     return this.itemAdminService.deleteItem(itemId);
   }
 
-  // 아이템 레시피 조회
+  // 관리자용 모든 레시피 테이블 조회
+  @Get('recipe')
+  getItemRecipeTable() {
+    return this.itemAdminService.getItemRecipeTable();
+  }
+
+  // 아이템 레시피 등록
   @Post('recipe/:stepId')
   createRecipe(
     @IntParam('stepId', '올바른 stepId를 입력해주세요') stepId: number,
     @Body() upsertRecipeDto: UpsertRecipeDto,
   ) {
     return this.itemAdminService.upsertRecipe(stepId, upsertRecipeDto);
+  }
+
+  @Get('grind')
+  findAllGrind() {
+    return this.itemAdminService.findAllGrind();
+  }
+
+  @Post('grind/itemId')
+  createGrind(
+    @IntParam('itemId', '올바른 itemId를 입력해주세요') itemId: number,
+    @Body() createGrindDto: CreateGrindDto,
+  ) {
+    return this.itemAdminService.createGrind(createGrindDto);
+  }
+
+  @Post('grind/:itemId')
+  combineGrind(
+    @IntParam('itemId', '올바른 itemId를 입력해주세요') itemId: number,
+    @Body() grindIds: GrindCombineDto,
+  ) {
+    return this.itemAdminService.combineGrind(itemId, grindIds);
+  }
+  @Get('grind/:itemId')
+  findGrindById(
+    @IntParam('itemId', '올바른 itemId를 입력해주세요') itemId: number,
+  ) {
+    return this.itemAdminService.findGrindById(itemId);
   }
 }

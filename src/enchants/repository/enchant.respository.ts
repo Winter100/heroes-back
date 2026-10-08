@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { EnchantCategory, Prisma } from '@prisma/client';
 import { EnchantDropCreateDto } from '../dto/enchant-drop-create.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { UpsertEnchantDropDto } from '../dto/upsert-enchant-drop.dto';
 
 @Injectable()
 export class EnchantRepository {
@@ -59,6 +60,21 @@ export class EnchantRepository {
         name,
       },
       select: enchantWithRelationsSelect,
+    });
+  }
+
+  async upsertEnchantDrop(
+    enchantId: number,
+    { battleIds }: UpsertEnchantDropDto,
+  ) {
+    return await this.prismaService.$transaction(async (tx) => {
+      await tx.enchantDrop.deleteMany({
+        where: { enchantId },
+      });
+
+      await tx.enchantDrop.createMany({
+        data: battleIds.map((raidId) => ({ enchantId, raidId })),
+      });
     });
   }
 
@@ -206,12 +222,14 @@ const enchantWithRelationsSelect = Prisma.validator<Prisma.EnchantSelect>()({
     select: {
       item: {
         select: {
+          id: true,
           name: true,
           image: true,
         },
       },
       raid: {
         select: {
+          id: true,
           battle: true,
           image: true,
         },
