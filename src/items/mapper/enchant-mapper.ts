@@ -22,6 +22,7 @@ export class EnchantMapper {
 
         if (drop.item) {
           result.push({
+            id: drop.item.id,
             name: drop.item?.name,
             image: drop.item?.image,
             type: 'item',
@@ -30,6 +31,7 @@ export class EnchantMapper {
 
         if (drop.raid) {
           result.push({
+            id: drop.raid.id,
             name: drop.raid?.battle,
             image: drop.raid?.image,
             type: 'raid',
@@ -43,6 +45,7 @@ export class EnchantMapper {
 }
 
 export interface FormattedDropResult {
+  id: number;
   name: string;
   image: string | null;
   type: 'item' | 'raid';

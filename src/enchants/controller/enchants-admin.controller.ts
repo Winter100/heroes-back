@@ -8,6 +8,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-token.guard';
 import { RolesGuard } from 'src/common/guards/roles.guard';
+import { UpsertEnchantDropDto } from '../dto/upsert-enchant-drop.dto';
 
 @Roles(UserRole.ADMIN)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -68,5 +69,16 @@ export class EnchantsAdminController {
     @IntParam('enchantId', '올바른 ENCHANT ID가 필요합니다') enchantId: number,
   ) {
     return this.enchantAdminService.deleteEnchant(enchantId);
+  }
+
+  @Post('drop/:enchantId')
+  upsertEnchantDrop(
+    @IntParam('enchantId', '올바른 ENCHANT ID가 필요합니다') enchantId: number,
+    @Body() upsertEnchantDropDto: UpsertEnchantDropDto,
+  ) {
+    return this.enchantAdminService.upsertEnchantDrop(
+      enchantId,
+      upsertEnchantDropDto,
+    );
   }
 }

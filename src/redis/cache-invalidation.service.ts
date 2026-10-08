@@ -16,13 +16,21 @@ export class CacheInvalidationService {
   }
 
   async invalidateItem(): Promise<void> {
-    const keys: string[] = [RedisKeys.itemList(), RedisKeys.itemStatistics()];
+    const keys: string[] = [
+      RedisKeys.itemList(),
+      RedisKeys.itemStatistics(),
+      RedisKeys.recipeList(),
+    ];
 
     await this.redisService.del(keys);
   }
 
   async invalidateRaid(): Promise<void> {
-    const keys: string[] = [RedisKeys.raidList(), RedisKeys.raidStatistics()];
+    const keys: string[] = [
+      RedisKeys.raidList(),
+      RedisKeys.raidStatistics(),
+      RedisKeys.raidStatistics(),
+    ];
     await this.redisService.del(keys);
   }
 

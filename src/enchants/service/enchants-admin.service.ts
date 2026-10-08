@@ -13,6 +13,7 @@ import { ItemAdminService } from 'src/items/service/items-admin.service';
 import { InjectPinoLogger, PinoLogger } from 'nestjs-pino';
 import { EventEmitter2 } from 'eventemitter2';
 import { EnchantUpdatedEvent } from '../event/enchant-updated.event';
+import { UpsertEnchantDropDto } from '../dto/upsert-enchant-drop.dto';
 
 @Injectable()
 export class EnchantAdminService {
@@ -203,5 +204,20 @@ export class EnchantAdminService {
     } catch {
       return [];
     }
+  }
+
+  /**
+   * 인챈트 Upsert
+   * @param enchantId
+   * @param createEnchantDropDto
+   */
+  async upsertEnchantDrop(
+    enchantId: number,
+    upsertEnchantDrop: UpsertEnchantDropDto,
+  ) {
+    return this.enchantRepository.upsertEnchantDrop(
+      enchantId,
+      upsertEnchantDrop,
+    );
   }
 }

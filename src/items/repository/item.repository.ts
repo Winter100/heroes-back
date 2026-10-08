@@ -12,6 +12,7 @@ import { Prisma } from '@prisma/client';
 import { CreateItemDto } from '../dto/item-create.dto';
 import { PrismaService } from './../../prisma/prisma.service';
 import { Injectable } from '@nestjs/common';
+import { CreateGrindDto } from '../dto/grind-create.dto';
 
 @Injectable()
 export class ItemRepository {
@@ -65,18 +66,20 @@ export class ItemRepository {
     });
   }
 
-  upsertRecipe(stepId: number, createRecipeDto: UpsertRecipeDto) {
-    const deleteMany = this.prismaService.itemRecipe.deleteMany({
-      where: { resultId: stepId },
+  async upsertRecipe(stepId: number, createRecipeDto: UpsertRecipeDto) {
+    return await this.prismaService.$transaction(async (tx) => {
+      await tx.itemRecipe.deleteMany({
+        where: { resultId: stepId },
+      });
+
+      await tx.itemRecipe.createMany({
+        data: createRecipeDto.recipes.map((recipe) => ({
+          resultId: stepId,
+          materialId: recipe.stepId,
+          quantity: recipe.quantity,
+        })),
+      });
     });
-    const createMany = this.prismaService.itemRecipe.createMany({
-      data: createRecipeDto.recipes.map((recipe) => ({
-        resultId: stepId,
-        materialId: recipe.stepId,
-        quantity: recipe.quantity,
-      })),
-    });
-    return this.prismaService.$transaction([deleteMany, createMany]);
   }
 
   async update(id: number, updateItemDto: UpdateItemDto, image?: string) {
@@ -283,9 +286,9 @@ export class ItemRepository {
   }
 
   // 아이템 레시피 테이블 조회
-  async findItemRecipeTable() {
+  async findItemRecipeTable(filter?: Prisma.EquipmentStepWhereInput) {
     return await this.prismaService.equipmentStep.findMany({
-      where: itemRecipeFilter,
+      where: filter,
       select: itemRecipeTableSelect,
     });
   }
@@ -301,6 +304,94 @@ export class ItemRepository {
     return await this.prismaService.equipmentStep.findUnique({
       where: { id: stepId },
       select: itemRecipeDetailSelect,
+    });
+  }
+
+  async findAllGrind() {
+    return this.prismaService.grind.findMany({
+      select: {
+        id: true,
+        title: true,
+        stat: true,
+        statOneValue: true,
+        statMaxValue: true,
+        grindSlot: {
+          select: {
+            slot: true,
+          },
+        },
+        grindIngredient: {
+          select: {
+            item: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            quantity: true,
+          },
+        },
+      },
+    });
+  }
+
+  // 연마 수치와 재료를 함께 생성
+  async createGrind(
+    createGrindDto: CreateGrindDto,
+  ): Promise<Prisma.BatchPayload> {
+    const { titleId, effects } = createGrindDto;
+    const grinds = await this.prismaService.$transaction(
+      effects.map((effect) =>
+        this.prismaService.grind.create({
+          data: {
+            title: { connect: { id: titleId } },
+            stat: { connect: { id: effect.statId } },
+            statOneValue: effect.statOneValue,
+            statMaxValue: effect.statMaxValue,
+            grindIngredient: {
+              create: {
+                item: { connect: { id: effect.itemId } },
+                quantity: effect.quantity,
+              },
+            },
+          },
+          select: { id: true },
+        }),
+      ),
+    );
+
+    return { count: grinds.length };
+  }
+
+  // 아이템의 연마 연결을 전달받은 목록으로 교체
+  async combineGrind(itemId: number, grindId: number[]): Promise<void> {
+    return this.prismaService.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        await tx.itemGrind.deleteMany({ where: { itemId } });
+
+        if (grindId.length === 0) return;
+
+        await tx.itemGrind.createMany({
+          data: grindId.map((id) => ({
+            itemId,
+            grindId: id,
+          })),
+          skipDuplicates: true,
+        });
+      },
+    );
+  }
+
+  async findGrindById(itemId: number) {
+    return this.prismaService.item.findFirst({
+      where: { id: itemId },
+      select: {
+        itemGrind: {
+          select: {
+            grindId: true,
+          },
+        },
+      },
     });
   }
 
@@ -322,6 +413,7 @@ const itemAllselect = Prisma.validator<Prisma.ItemSelect>()({
   image: true,
   category: true,
   tier: true,
+  slot: true,
 });
 
 export type ItemWithRelations = Prisma.ItemGetPayload<{
